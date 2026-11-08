@@ -96,3 +96,7 @@ and stays pixel-exact, so this differs from the reference sites' q60.
 
 Search uses OSM `name` only. The site's name, its domain, and label scripts are
 still open in `PLAN.md`; the viewer's title is a placeholder.
+
+## 2026-11-08 — Domain and labels
+
+Brajeshwar chose `manipur.oinam.com` for the site, and Latin labels for now.

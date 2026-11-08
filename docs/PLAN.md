@@ -8,7 +8,7 @@ the Phase 0 record.*
 
 **Phase 1, 2026-11-08.** Imphal renders end to end and runs locally: 262,527 buildings,
 162 frames in about 150 seconds, a 161 MB pyramid, a viewer with search and
-shareable URLs. Hosting waits on the site name and domain. The Phase 1 exit (a link
+shareable URLs. Hosting waits on the go-ahead to publish at `manipur.oinam.com`. The Phase 1 exit (a link
 a Manipuri friend recognizes) is still open.
 
 **Phase 0 record:**
@@ -122,7 +122,7 @@ Four stages, each a CLI subcommand, each cacheable:
 Viewer: OpenSeadragon, vanilla TypeScript, Vite. Crisp pixels above 1× zoom,
 URL hash carries position and zoom (as the reference sites do), search box over
 the index, attribution footer. Hosted on Cloudflare Pages with tiles on R2.
-Suggested domain: `manipur.oinam.com` (decision pending).
+Domain: `manipur.oinam.com`.
 
 Renderer choice for v1: pure Python, NumPy + Pillow, painter's algorithm. It is
 slow compared to a GPU but Imphal at 0.5 m/px is about 645 megapixels of canvas and renders
@@ -206,6 +206,4 @@ Stop, or re-scope, if any of these happens:
 
 ## Open decisions for Brajeshwar
 
-1. Site name and domain. `manipur.oinam.com` proposed.
-2. Which landmarks get sprites first.
-3. Whether labels are in Meitei Mayek, Latin, or both.
+1. Which landmarks get sprites first.

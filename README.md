@@ -16,6 +16,22 @@ and ESA WorldCover, with hand-placed pixel-art sprites for landmarks.
 This is a spare-time, for-fun project. It is not a product. See `docs/PLAN.md`
 for the plan and `CLAUDE.md` for how an agent picks it up.
 
+## Inspiration
+
+The maps that made us want one of Imphal:
+
+- [tiny.london](https://tiny.london) by Boris Starkov, with a [write-up of how it was made](https://tiny.london/how/).
+- [isometric.nyc](https://isometric.nyc) by Andy Coenen, with a [write-up](https://cannoneyed.com/projects/isometric-nyc) and [source code](https://github.com/cannoneyed/isometric-nyc).
+- [Pixel Singapore](https://www.yadongxie.com/blog/how-pixel-singapore-was-made) by Yadong Xie.
+- [Isopolis SF](https://sf.isopolis.city/) by lawrencechen.
+
+The look and the method owe more to:
+
+- SimCity 2000, for the 2:1 dimetric view and a small vocabulary of building types.
+- [osm-isometric-3d](https://github.com/bitsteller/osm-isometric-3d) and [OSM2World](https://osm2world.org/), which showed that isometric maps can be drawn straight from OpenStreetMap.
+
+Notes on how each of these was made are in `docs/RESEARCH.md`.
+
 ## Status
 
 Phase 1 (Imphal v1) is live at https://manipur.oinam.com: the full municipal bbox, a zoomable viewer, search, and shareable URLs. Phase 0 closed with projection B, 0.5 m/px, and the monsoon palette; see `docs/DECISIONS.md`.

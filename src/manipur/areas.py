@@ -10,6 +10,10 @@ class Area:
     west: float
     north: float
     east: float
+    # A Geofabrik extract to cut OSM from; small areas use Overpass instead.
+    osm_extract: str | None = None
+    # Coarser height sampling keeps large areas in memory; None keeps the source's 0.5 m.
+    height_res_m: float | None = None
 
     @property
     def bounds(self) -> tuple[float, float, float, float]:
@@ -26,6 +30,15 @@ AREAS = {
     "kangla": Area("kangla", 24.800, 93.935, 24.815, 93.952),
     # Wide enough that the 900 px detail crop never runs off the data.
     "kangla-sw": Area("kangla-sw", 24.796, 93.931, 24.811, 93.945),
+    "imphal": Area(
+        "imphal",
+        24.74,
+        93.88,
+        24.86,
+        94.00,
+        osm_extract="asia/india/north-eastern-zone",
+        height_res_m=2.0,
+    ),
 }
 
 

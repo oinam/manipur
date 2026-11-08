@@ -71,3 +71,13 @@ and color come from a seeded hash, so they are plausible rather than real.
 The Shaheed Minar sprite is drawn from shapes in code; no photo pixels are read.
 Its position is hand-placed at the center of OSM's park polygon, because no
 surveyed coordinate exists, and needs checking by someone who knows the park.
+
+## 2026-11-08 — Phase 0 closed; Phase 1 scale and source
+
+Brajeshwar said to go ahead with Phase 1 after seeing the detail crop.
+
+The municipal bbox in `PLAN.md` is 161 km², not the 35 km² it first said, so the
+canvas is about 645 megapixels and is rendered as a grid of frames. OSM comes from
+Geofabrik's `north-eastern-zone` extract, read with pyosmium (110 MB, against 1.7 GB
+for all of India, on a nearly full disk). Heights are resampled to 2 m for this
+area; the raster's effective resolution is about 4 m.

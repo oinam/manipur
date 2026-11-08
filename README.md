@@ -18,7 +18,7 @@ for the plan and `CLAUDE.md` for how an agent picks it up.
 
 ## Status
 
-Phase 0 (feasibility) rendered for the Kangla patch and awaiting the go/no-go. Projection, pixel scale, and palette are chosen; see `docs/DECISIONS.md`.
+Phase 1 (Imphal v1) in progress. Phase 0 closed with projection B, 0.5 m/px, and the monsoon palette; see `docs/DECISIONS.md`.
 
 ## Layout
 

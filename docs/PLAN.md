@@ -2,8 +2,9 @@
 
 ## Status
 
-*Phase 0, Kangla patch, 2026-11-08. Rendered and awaiting the go/no-go: does the
-street pattern read as Imphal?*
+*Phase 0 closed 2026-11-08: Brajeshwar said to go ahead with Phase 1 after seeing
+the detail crop. Phase 1 is in progress on `phase-1-imphal`. The notes below are
+the Phase 0 record.*
 
 - **Chosen:** projection B, 0.5 m/px, `monsoon` palette.
 - **Footprints:** 57 OSM and 8,170 Open Buildings polygons, 127 (1.6%) of them
@@ -90,7 +91,7 @@ All free, all permit derivative works with attribution. Register each in
 Approximate bounding boxes, to be confirmed in Phase 0:
 
 - Kangla test patch: 24.800–24.815 N, 93.935–93.952 E (about 1.5 × 1.7 km)
-- Imphal municipal area: 24.74–24.86 N, 93.88–94.00 E (about 35 km²)
+- Imphal municipal area: 24.74–24.86 N, 93.88–94.00 E (about 161 km²; the municipality itself is smaller, but this box is what we render)
 - Imphal valley incl. Loktak: 24.45–24.95 N, 93.70–94.10 E
 - Manipur state: 23.83–25.68 N, 93.03–94.78 E (about 22,300 km²)
 
@@ -117,7 +118,7 @@ the index, attribution footer. Hosted on Cloudflare Pages with tiles on R2.
 Suggested domain: `manipur.oinam.com` (decision pending).
 
 Renderer choice for v1: pure Python, NumPy + Pillow, painter's algorithm. It is
-slow compared to a GPU but Imphal at 0.5 m/px is about 140 megapixels and renders
+slow compared to a GPU but Imphal at 0.5 m/px is about 645 megapixels of canvas and renders
 in minutes, it is exact to the pixel, and it is easy for an agent to debug from
 PNG diffs. Move to a headless three.js or a Rust renderer only if Phase 3 makes
 Python painful.

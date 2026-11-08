@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 
 import rasterio
+import osmium
 import requests
 import s2sphere
 from pyproj import Transformer
@@ -39,6 +40,7 @@ WORLDCOVER_URL = (
     "https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/"
     "ESA_WorldCover_10m_2021_v200_{tile}_Map.tif"
 )
+GEOFABRIK_URL = "https://download.geofabrik.de/{extract}-latest.osm.pbf"
 TEMPORAL_BUCKET = "https://storage.googleapis.com/open-buildings-temporal-data"
 TEMPORAL_MANIFEST = TEMPORAL_BUCKET + "/v1/manifests/{token}_EPSG_{epsg}_{year}_06_30.json"
 TEMPORAL_YEAR = 2023
@@ -57,6 +59,7 @@ OVERPASS_TAGS = (
     '["building"]',
     '["name"]',
 )
+OSM_KEYS = tuple(tag.strip('[]"') for tag in OVERPASS_TAGS)
 
 
 def raw_dir(area: Area) -> Path:
@@ -103,6 +106,103 @@ def fetch_osm(area: Area, attempts: int = 8) -> tuple[Path, str]:
         time.sleep(delay)
         delay = min(delay * 2, 240)
     raise SystemExit("osm: every Overpass endpoint failed")
+
+
+class _RelationMembers(osmium.SimpleHandler):
+    """Collect the ways that make up multipolygons we keep."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.ways: set[int] = set()
+
+    def relation(self, relation) -> None:
+        tags = dict(relation.tags)
+        if tags.get("type") == "multipolygon" and _is_kept(tags):
+            self.ways.update(member.ref for member in relation.members if member.type == "w")
+
+
+class _AreaExtract(osmium.SimpleHandler):
+    """Write kept features in the same shape Overpass returns."""
+
+    def __init__(self, area: Area, member_ways: set[int]) -> None:
+        super().__init__()
+        self.area = area
+        self.member_ways = member_ways
+        self.member_points: dict[int, list[dict[str, float]]] = {}
+        self.elements: list[dict] = []
+
+    def _inside(self, lat: float, lon: float) -> bool:
+        west, south, east, north = self.area.bounds
+        return south <= lat <= north and west <= lon <= east
+
+    def node(self, node) -> None:
+        if len(node.tags) and node.location.valid():
+            lat, lon = node.location.lat, node.location.lon
+            tags = dict(node.tags)
+            if self._inside(lat, lon) and _is_kept(tags):
+                self.elements.append(
+                    {"type": "node", "id": node.id, "lat": lat, "lon": lon, "tags": tags}
+                )
+
+    def way(self, way) -> None:
+        tags = dict(way.tags)
+        wanted = way.id in self.member_ways
+        if not wanted and not _is_kept(tags):
+            return
+        points = [
+            {"lat": node.location.lat, "lon": node.location.lon}
+            for node in way.nodes
+            if node.location.valid()
+        ]
+        if wanted:
+            self.member_points[way.id] = points
+        if _is_kept(tags) and any(self._inside(p["lat"], p["lon"]) for p in points):
+            self.elements.append({"type": "way", "id": way.id, "tags": tags, "geometry": points})
+
+    def relation(self, relation) -> None:
+        tags = dict(relation.tags)
+        if tags.get("type") != "multipolygon" or not _is_kept(tags):
+            return
+        members = [
+            {"type": "way", "role": member.role, "geometry": self.member_points[member.ref]}
+            for member in relation.members
+            if member.type == "w" and member.ref in self.member_points
+        ]
+        if any(self._inside(p["lat"], p["lon"]) for m in members for p in m["geometry"]):
+            self.elements.append(
+                {"type": "relation", "id": relation.id, "tags": tags, "members": members}
+            )
+
+
+def _is_kept(tags: dict[str, str]) -> bool:
+    return any(key in tags for key in OSM_KEYS)
+
+
+def fetch_osm_extract(area: Area) -> tuple[Path, str]:
+    """Cut the area out of a cached Geofabrik extract."""
+    url = GEOFABRIK_URL.format(extract=area.osm_extract)
+    cache = Path("data/raw/_geofabrik") / url.rsplit("/", 1)[1]
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    if not cache.exists():
+        print(f"osm: downloading {url}")
+        partial = cache.with_suffix(".part")
+        with requests.get(url, stream=True, timeout=120) as response:
+            response.raise_for_status()
+            with partial.open("wb") as output:
+                for chunk in response.iter_content(chunk_size=1 << 20):
+                    output.write(chunk)
+        partial.rename(cache)
+    members = _RelationMembers()
+    members.apply_file(str(cache))
+    extract = _AreaExtract(area, members.ways)
+    extract.apply_file(str(cache), locations=True, idx="flex_mem")
+    target = raw_dir(area) / "osm.json"
+    target.write_text(json.dumps({"elements": extract.elements}))
+    print(f"osm: {len(extract.elements)} elements")
+    reader = osmium.io.Reader(str(cache), osmium.osm.osm_entity_bits.NOTHING)
+    stamp = reader.header().get("osmosis_replication_timestamp")
+    reader.close()
+    return target, f"{url} (data to {stamp})"
 
 
 def s2_tokens(area: Area, level: int = 6) -> list[str]:
@@ -205,7 +305,10 @@ def fetch_heights(area: Area) -> tuple[Path, list[str]]:
     datasets = [rasterio.open(url) for url in urls]
     try:
         mosaic, transform = merge(
-            datasets, bounds=(left, bottom, right, top), indexes=[TEMPORAL_HEIGHT_BAND]
+            datasets,
+            bounds=(left, bottom, right, top),
+            res=area.height_res_m,
+            indexes=[TEMPORAL_HEIGHT_BAND],
         )
         profile = {
             "driver": "GTiff",
@@ -230,7 +333,7 @@ def fetch_heights(area: Area) -> tuple[Path, list[str]]:
 def fetch(area: Area) -> None:
     directory = raw_dir(area)
     directory.mkdir(parents=True, exist_ok=True)
-    osm_path, endpoint = fetch_osm(area)
+    osm_path, endpoint = fetch_osm_extract(area) if area.osm_extract else fetch_osm(area)
     buildings_path, building_urls = fetch_open_buildings(area)
     cover_path, cover_url = fetch_worldcover(area)
     heights_path, height_urls = fetch_heights(area)

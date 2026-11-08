@@ -3,10 +3,15 @@
 import datetime as dt
 import json
 import math
+import multiprocessing
+import time
 import zlib
+from dataclasses import dataclass
 from pathlib import Path
 
+import geopandas as gpd
 import numpy as np
+import pyogrio
 import shapely
 import shapely.affinity
 from affine import Affine
@@ -22,7 +27,7 @@ from manipur.areas import Area
 from manipur.fetch import raw_dir
 from manipur.osm import load_features
 from manipur.palettes import PALETTE, SLOT, SLOTS
-from manipur.prepare import METRIC_CRS
+from manipur.prepare import METRIC_CRS, derived_path
 from manipur.render import (
     LINED_ROADS,
     PROJECTION_B,
@@ -32,6 +37,7 @@ from manipur.render import (
     Layers,
     Viewport,
     centered_viewport,
+    full_viewport,
     load_layers,
 )
 
@@ -95,6 +101,14 @@ STOREY_M = 3.2
 BLUR_RADIUS_PX = 16
 FOOTPATH_M = 1.8
 MINAR_CLEARING_M = 16.0
+FRAME_PX = 2048
+# Wider than the tallest building's lift, the ground blur, and any sprite, so frames join exactly.
+APRON_PX = 256
+WORKERS = 5
+PADDY_ANGLE = math.radians(17)
+PADDY_LENGTH_M = 44.0
+PADDY_WIDTH_M = 28.0
+PADDY_BUND_M = 1.1
 
 
 def _mix(first: str, second: str, amount: float) -> str:
@@ -211,7 +225,49 @@ def _paint_ground(layers: Layers, view: Viewport) -> np.ndarray:
     chance = 0.05 + hash_field(xs // 9, ys // 9, 12) * 0.17
     marked = inside & (hash_field(xs, ys, 13) < chance)
     canvas[marked] = speckle[chosen[marked]]
+    crop = inside & (chosen == GROUND_CLASSES.index("crop"))
+    if crop.any():
+        _paint_paddy(canvas, crop, xs, ys)
     return canvas
+
+
+def _paint_paddy(canvas: np.ndarray, crop: np.ndarray, xs: np.ndarray, ys: np.ndarray) -> None:
+    """Draw fields on a world-anchored lattice; OSM maps no paddy boundaries here."""
+    a, b, d, e = PROJECTION.matrix
+    det = a * e - b * d
+    x = (e * xs - b * ys) / det
+    y = (-d * xs + a * ys) / det
+    along = x * math.cos(PADDY_ANGLE) + y * math.sin(PADDY_ANGLE)
+    across = -x * math.sin(PADDY_ANGLE) + y * math.cos(PADDY_ANGLE)
+    row = np.floor(across / PADDY_WIDTH_M)
+    shifted = along + hash_field(row, np.zeros_like(row), 40) * PADDY_LENGTH_M
+    column = np.floor(shifted / PADDY_LENGTH_M)
+    tone = hash_field(column, row, 41)
+    fields = np.select(
+        [tone < 0.42, tone < 0.78, tone < 0.93],
+        [SLOTS_32["crop"], SLOTS_32["canopy_light"], SLOTS_32["grass"]],
+        default=SLOTS_32["shrub"],
+    ).astype("uint8")
+    furrows = np.select(
+        [tone < 0.42, tone < 0.78, tone < 0.93],
+        [SLOTS_32["canopy_light"], SLOTS_32["grass"], SLOTS_32["shrub"]],
+        default=SLOTS_32["tree"],
+    ).astype("uint8")
+    canvas[crop] = fields[crop]
+    rows = crop & (np.floor(across * 1.2) % 3 == 0) & (hash_field(xs, ys, 42) < 0.7)
+    canvas[rows] = furrows[rows]
+    bund = crop & (
+        (shifted - column * PADDY_LENGTH_M < PADDY_BUND_M)
+        | (across - row * PADDY_WIDTH_M < PADDY_BUND_M)
+    )
+    canvas[bund] = SLOTS_32["bare"]
+
+
+def _paint_surfaces(canvas: np.ndarray, surfaces: gpd.GeoDataFrame, view: Viewport) -> None:
+    for kind, slot in (("pitch", "grass"), ("paved", "road_minor")):
+        part = surfaces[surfaces.kind == kind]
+        mask = _burn([(geometry, 1) for geometry in part.geometry], view).astype(bool)
+        canvas[mask] = SLOTS_32[slot]
 
 
 def _water_geometry(layers: Layers) -> list:
@@ -296,21 +352,6 @@ def _project(view: Viewport, x: float, y: float, z: float) -> tuple[int, int]:
 
 def _hash(seed: int, text: str, modulo: int) -> int:
     return zlib.crc32(f"{seed}:{text}".encode()) % modulo
-
-
-def _in_view(view: Viewport, geometry, pad: float = 120.0) -> bool:
-    a, b, d, e = PROJECTION.matrix
-    minx, miny, maxx, maxy = geometry.bounds
-    corners = [(minx, miny), (minx, maxy), (maxx, miny), (maxx, maxy)]
-    screen = [(a * x + b * y + view.x_offset, d * x + e * y + view.y_offset) for x, y in corners]
-    xs = [point[0] for point in screen]
-    ys = [point[1] for point in screen]
-    return (
-        max(xs) >= -pad
-        and min(xs) <= view.width + pad
-        and max(ys) >= -pad
-        and min(ys) <= view.height + pad
-    )
 
 
 def _normal(p: np.ndarray, q: np.ndarray) -> tuple[float, float]:
@@ -544,7 +585,9 @@ def _tree_sprite(radius: int, seed: int) -> tuple[Image.Image, Image.Image, int]
     )
 
 
-def _tree_points(layers: Layers, tree_rows: list[LineString], seed: int) -> np.ndarray:
+def _tree_points(
+    layers: Layers, surfaces: gpd.GeoDataFrame, tree_rows: list[LineString], seed: int
+) -> np.ndarray:
     """Return (x, y, variant) for trees, placed the same way whatever the crop."""
     left, bottom, right, top = layers.patch.bounds
     columns = np.arange(left, right, TREE_SPACING_M)
@@ -560,79 +603,179 @@ def _tree_points(layers: Layers, tree_rows: list[LineString], seed: int) -> np.n
     for row in layers.ground.itertuples():
         odds = TREE_ODDS.get(row.ground, 0.0)
         if odds:
+            shapely.prepare(row.geometry)
             inside = shapely.contains_xy(row.geometry, x, y)
             keep |= inside & (roll < odds)
 
-    points = list(zip(x[keep], y[keep], variant[keep], strict=True))
+    extra = []
     for line in tree_rows:
         for distance in np.arange(0.0, line.length, 8.0):
             point = line.interpolate(float(distance))
             if layers.patch.contains(point):
-                points.append((point.x, point.y, int(distance) % 12))
-    if not points:
+                extra.append((point.x, point.y, int(distance) % 12))
+    array = np.column_stack([x[keep], y[keep], variant[keep]]).astype("float64")
+    if extra:
+        array = np.vstack([array, np.array(extra, dtype="float64")])
+    if not len(array):
         return np.empty((0, 3))
-    array = np.array(points, dtype="float64")
 
-    blocked = shapely.union_all(
+    blocked = np.concatenate(
         [
-            *_water_geometry(layers),
-            *layers.roads.geometry.buffer(layers.roads.width_m / 2 + 1.5).values,
-            *layers.buildings.geometry.buffer(1.8).values,
+            np.asarray(_water_geometry(layers), dtype=object),
+            layers.roads.geometry.buffer(layers.roads.width_m / 2 + 1.5).values.to_numpy(),
+            layers.buildings.geometry.buffer(1.8).values.to_numpy(),
+            surfaces.geometry.values.to_numpy(),
         ]
     )
-    shapely.prepare(blocked)
-    free = ~shapely.contains_xy(blocked, array[:, 0], array[:, 1])
+    blocked = blocked[~shapely.is_missing(blocked) & ~shapely.is_empty(blocked)]
+    hits, _ = shapely.STRtree(blocked).query(
+        shapely.points(array[:, 0], array[:, 1]), predicate="intersects"
+    )
+    free = np.ones(len(array), dtype=bool)
+    free[hits] = False
     return array[free]
 
 
-def _load_landmark() -> dict:
-    sidecar = json.loads((SPRITE_DIR / "shaheed_minar.json").read_text())
+@dataclass
+class Scene:
+    """Everything that is computed once per area and shared by its frames."""
+
+    layers: Layers
+    surfaces: gpd.GeoDataFrame
+    trees: np.ndarray
+    sprites: list
+    landmarks: list[dict]
+    seed: int
+    indexes: dict[str, shapely.STRtree]
+
+
+RADIUS_PX = (6, 7, 8, 9, 10, 12)
+
+
+def empty_surfaces() -> gpd.GeoDataFrame:
+    return gpd.GeoDataFrame({"kind": []}, geometry=[], crs=METRIC_CRS)
+
+
+def load_landmarks() -> list[dict]:
     to_metric = Transformer.from_crs(4326, METRIC_CRS, always_xy=True)
-    x, y = to_metric.transform(sidecar["placed_at"]["lon"], sidecar["placed_at"]["lat"])
-    sprite = np.asarray(Image.open(SPRITE_DIR / "shaheed_minar.png"))
-    return {"x": x, "y": y, "sprite": sprite, "anchor": sidecar["anchor_px"]}
+    landmarks = []
+    for path in sorted(SPRITE_DIR.glob("*.json")):
+        sidecar = json.loads(path.read_text())
+        x, y = to_metric.transform(sidecar["placed_at"]["lon"], sidecar["placed_at"]["lat"])
+        sprite = np.asarray(Image.open(path.with_suffix(".png")))
+        landmarks.append({"x": x, "y": y, "sprite": sprite, "anchor": sidecar["anchor_px"]})
+    return landmarks
 
 
-def render_detail(
+def compute_trees(
     layers: Layers,
-    view: Viewport,
+    surfaces: gpd.GeoDataFrame,
+    tree_rows: list[LineString],
+    landmarks: list[dict],
+    seed: int,
+) -> np.ndarray:
+    trees = _tree_points(layers, surfaces, tree_rows, seed)
+    for landmark in landmarks:
+        distance = np.hypot(trees[:, 0] - landmark["x"], trees[:, 1] - landmark["y"])
+        trees = trees[distance > MINAR_CLEARING_M]
+    return trees
+
+
+def build_scene(
+    layers: Layers,
     tree_rows: list[LineString] | None = None,
     landmarks: list[dict] | None = None,
+    surfaces: gpd.GeoDataFrame | None = None,
     seed: int = SEED,
-) -> np.ndarray:
-    """Return a uint8 array of 32 palette slots."""
+    trees: np.ndarray | None = None,
+) -> Scene:
     tree_rows = tree_rows or []
     landmarks = landmarks or []
-    canvas = _paint_ground(layers, view)
+    surfaces = empty_surfaces() if surfaces is None else surfaces
+    if trees is None:
+        trees = compute_trees(layers, surfaces, tree_rows, landmarks, seed)
+    # Exploded so a frame only touches the ground fragments it can see.
+    ground = layers.ground.explode(index_parts=False).reset_index(drop=True)
+    local = Layers(
+        layers.patch, ground, layers.water, layers.waterways, layers.roads, layers.buildings
+    )
+    frames = {
+        "ground": ground,
+        "water": layers.water,
+        "waterways": layers.waterways,
+        "roads": layers.roads,
+        "buildings": layers.buildings,
+        "surfaces": surfaces,
+    }
+    indexes = {name: shapely.STRtree(frame.geometry.values) for name, frame in frames.items()}
+    sprites = [_tree_sprite(RADIUS_PX[index % 6], seed + index) for index in range(12)]
+    return Scene(local, surfaces, trees, sprites, landmarks, seed, indexes)
+
+
+def _view_quad(view: Viewport) -> shapely.Polygon:
+    """Return the ground area that the view's rectangle covers."""
+    a, b, d, e = PROJECTION.matrix
+    det = a * e - b * d
+    corners = []
+    for sx, sy in ((0, 0), (view.width, 0), (view.width, view.height), (0, view.height)):
+        px, py = sx - view.x_offset, sy - view.y_offset
+        corners.append(((e * px - b * py) / det, (-d * px + a * py) / det))
+    return shapely.Polygon(corners)
+
+
+def _select(frame: gpd.GeoDataFrame, index: shapely.STRtree, quad) -> gpd.GeoDataFrame:
+    return frame.iloc[np.unique(index.query(quad, predicate="intersects"))]
+
+
+def render_detail(scene: Scene, view: Viewport) -> np.ndarray:
+    """Return a uint8 array of 32 palette slots."""
+    quad = _view_quad(view)
+    layers = scene.layers
+    if not quad.intersects(layers.patch):
+        return np.full((view.height, view.width), SLOTS_32["background"], dtype="uint8")
+    local = Layers(
+        layers.patch,
+        _select(layers.ground, scene.indexes["ground"], quad),
+        _select(layers.water, scene.indexes["water"], quad),
+        _select(layers.waterways, scene.indexes["waterways"], quad),
+        _select(layers.roads, scene.indexes["roads"], quad),
+        _select(layers.buildings, scene.indexes["buildings"], quad),
+    )
+    surfaces = _select(scene.surfaces, scene.indexes["surfaces"], quad)
+    seed = scene.seed
+
+    a, b, d, e = PROJECTION.matrix
+
+    def screen(x, y):
+        return a * x + b * y + view.x_offset, d * x + e * y + view.y_offset
+
+    landmarks = []
+    for landmark in scene.landmarks:
+        sx, sy = screen(landmark["x"], landmark["y"])
+        if -200 < sx < view.width + 200 and -200 < sy < view.height + 200:
+            landmarks.append(landmark)
+
+    canvas = _paint_ground(local, view)
+    _paint_surfaces(canvas, surfaces, view)
     for landmark in landmarks:
         clearing = Point(landmark["x"], landmark["y"]).buffer(MINAR_CLEARING_M * 0.6)
         canvas[_burn([(clearing, 1)], view).astype(bool)] = SLOTS_32["bare"]
-    _paint_water(canvas, layers, view)
-    _paint_roads(canvas, layers, view)
-
-    trees = _tree_points(layers, tree_rows, seed)
-    for landmark in landmarks:
-        far = np.hypot(trees[:, 0] - landmark["x"], trees[:, 1] - landmark["y"]) > MINAR_CLEARING_M
-        trees = trees[far]
-    radius_px = (6, 7, 8, 9, 10, 12)
-    sprites = [_tree_sprite(radius_px[index % 6], seed + index) for index in range(12)]
+    _paint_water(canvas, local, view)
+    _paint_roads(canvas, local, view)
 
     items = []
     shadows = []
-    for row in layers.buildings.itertuples():
+    for row in local.buildings.itertuples():
         parts = row.geometry.geoms if row.geometry.geom_type == "MultiPolygon" else [row.geometry]
         for polygon in parts:
-            if not _in_view(view, polygon):
-                continue
             dx, dy = _sun_offset(row.height_m * SHADOW_PER_HEIGHT)
             moved = shapely.affinity.translate(polygon, dx, dy)
             shadows.append((shapely.convex_hull(shapely.union(polygon, moved)), 1))
             center = polygon.centroid
             items.append((-_depth(center.x, center.y), row.building_id, 0, polygon, row.height_m))
 
-    a, b, d, e = PROJECTION.matrix
-    screen_x = a * trees[:, 0] + b * trees[:, 1] + view.x_offset
-    screen_y = d * trees[:, 0] + e * trees[:, 1] + view.y_offset
+    trees = scene.trees
+    screen_x, screen_y = screen(trees[:, 0], trees[:, 1])
     nearby = (
         (screen_x > -40)
         & (screen_x < view.width + 40)
@@ -641,7 +784,7 @@ def render_detail(
     )
     for x, y, variant in trees[nearby]:
         index = int(variant)
-        radius_m = radius_px[index % 6] / PROJECTION.lift * 0.95
+        radius_m = RADIUS_PX[index % 6] / PROJECTION.lift * 0.95
         dx, dy = _sun_offset(radius_m * 0.9)
         shadows.append((Point(x + dx, y + dy).buffer(radius_m * 0.9, quad_segs=4), 1))
         items.append((-_depth(x, y), f"tree/{x:.2f}/{y:.2f}", 1, (x, y), index))
@@ -666,7 +809,7 @@ def render_detail(
         if kind == 0:
             _paint_building(draw, view, payload, extra, label, seed)
         elif kind == 1:
-            sprite, sprite_mask, height = sprites[extra]
+            sprite, sprite_mask, height = scene.sprites[extra]
             x, y = _project(view, payload[0], payload[1], 0)
             image.paste(sprite, (x - sprite.width // 2, y - height + 1), sprite_mask)
         else:
@@ -680,8 +823,6 @@ def render_detail(
 
 
 def _load_tree_rows(area: Area) -> list[LineString]:
-    import geopandas as gpd
-
     rows = [
         f.geometry
         for f in load_features(raw_dir(area) / "osm.json")
@@ -692,17 +833,123 @@ def _load_tree_rows(area: Area) -> list[LineString]:
     return list(gpd.GeoSeries(rows, crs=4326).to_crs(METRIC_CRS).values)
 
 
-def detail(area: Area) -> None:
+def _load_surfaces(area: Area) -> gpd.GeoDataFrame:
+    path = derived_path(area)
+    if "surfaces" not in pyogrio.list_layers(path)[:, 0]:
+        return empty_surfaces()
+    return gpd.read_file(path, layer="surfaces")
+
+
+def trees_path(area: Area) -> Path:
+    return Path("data/derived") / f"{area.name}_trees.npy"
+
+
+def load_scene(area: Area, use_cached_trees: bool = False) -> Scene:
     layers = load_layers(area)
+    surfaces = _load_surfaces(area)
+    landmarks = load_landmarks()
+    trees = np.load(trees_path(area)) if use_cached_trees else None
+    return build_scene(layers, _load_tree_rows(area), landmarks, surfaces, trees=trees)
+
+
+def save_slots(slots: np.ndarray, path: Path) -> None:
+    image = Image.fromarray(slots, mode="P")
+    image.putpalette(detail_lookup())
+    image.save(path, optimize=True)
+
+
+def detail(area: Area) -> None:
+    scene = load_scene(area)
     to_metric = Transformer.from_crs(4326, METRIC_CRS, always_xy=True)
     x, y = to_metric.transform(*CROP_CENTER)
     view = centered_viewport(PROJECTION, x, y, CROP_PX, CROP_PX)
-    slots = render_detail(layers, view, _load_tree_rows(area), [_load_landmark()])
-    image = Image.fromarray(slots, mode="P")
-    image.putpalette(detail_lookup())
     target = Path("out") / area.name
     target.mkdir(parents=True, exist_ok=True)
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     output = target / f"{stamp}_detail-crop.png"
-    image.save(output, optimize=True)
+    save_slots(render_detail(scene, view), output)
     print(output)
+
+
+def frames_dir(area: Area) -> Path:
+    return Path("out") / area.name / "frames"
+
+
+def manifest_path(area: Area) -> Path:
+    return Path("out") / area.name / "manifest.json"
+
+
+def frame_view(canvas: Viewport, column: int, row: int) -> Viewport:
+    """Return a frame's view, including its apron, cut from the global canvas."""
+    return Viewport(
+        FRAME_PX + 2 * APRON_PX,
+        FRAME_PX + 2 * APRON_PX,
+        canvas.x_offset - column * FRAME_PX + APRON_PX,
+        canvas.y_offset - row * FRAME_PX + APRON_PX,
+    )
+
+
+def render_frame(scene: Scene, canvas: Viewport, column: int, row: int) -> np.ndarray:
+    slots = render_detail(scene, frame_view(canvas, column, row))
+    return slots[APRON_PX:-APRON_PX, APRON_PX:-APRON_PX]
+
+
+_worker: dict = {}
+
+
+def _init_worker(area: Area, canvas: Viewport) -> None:
+    _worker["scene"] = load_scene(area, use_cached_trees=True)
+    _worker["canvas"] = canvas
+    _worker["area"] = area
+
+
+def _render_and_save(cell: tuple[int, int]) -> tuple[int, int]:
+    column, row = cell
+    slots = render_frame(_worker["scene"], _worker["canvas"], column, row)
+    save_slots(slots, frames_dir(_worker["area"]) / f"{row:03d}_{column:03d}.png")
+    return cell
+
+
+def frame_grid(canvas: Viewport) -> tuple[int, int]:
+    return math.ceil(canvas.width / FRAME_PX), math.ceil(canvas.height / FRAME_PX)
+
+
+def frames(area: Area, only: list[tuple[int, int]] | None = None) -> None:
+    """Render the area as a grid of frames, in parallel, and write its manifest."""
+    started = time.perf_counter()
+    scene = load_scene(area)
+    np.save(trees_path(area), scene.trees)
+    canvas = full_viewport(PROJECTION, scene.layers)
+    columns, rows = frame_grid(canvas)
+    print(f"{area.name}: {len(scene.trees)} trees, {columns} x {rows} frames")
+    directory = frames_dir(area)
+    directory.mkdir(parents=True, exist_ok=True)
+    cells = only or [(column, row) for row in range(rows) for column in range(columns)]
+    context = multiprocessing.get_context("spawn")
+    with context.Pool(WORKERS, _init_worker, (area, canvas)) as pool:
+        for count, _ in enumerate(pool.imap_unordered(_render_and_save, cells), 1):
+            if count % 10 == 0 or count == len(cells):
+                print(
+                    f"{count}/{len(cells)} frames, {time.perf_counter() - started:.0f}s", flush=True
+                )
+    manifest_path(area).write_text(
+        json.dumps(
+            {
+                "area": area.name,
+                "projection": PROJECTION.name,
+                "pixels_per_meter": 2.0,
+                "rotation_deg": PROJECTION.rotation_deg,
+                "ground_scale": PROJECTION.ground_scale,
+                "x_offset": canvas.x_offset,
+                "y_offset": canvas.y_offset,
+                "canvas_width": columns * FRAME_PX,
+                "canvas_height": rows * FRAME_PX,
+                "frame_px": FRAME_PX,
+                "columns": columns,
+                "rows": rows,
+            },
+            indent=2,
+        )
+        + "\n"
+    )
+    print(f"done in {time.perf_counter() - started:.0f}s")

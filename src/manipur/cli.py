@@ -42,6 +42,12 @@ def run_detail(area: Area) -> None:
     detail(area)
 
 
+def run_frames(area: Area) -> None:
+    from manipur.detail import frames
+
+    frames(area)
+
+
 STAGES: dict[str, Callable[[Area], None]] = {
     "fetch": run_fetch,
     "plan": run_plan,
@@ -49,6 +55,7 @@ STAGES: dict[str, Callable[[Area], None]] = {
     "render": run_render,
     "swatches": run_swatches,
     "detail": run_detail,
+    "frames": run_frames,
 }
 
 

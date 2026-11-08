@@ -43,6 +43,7 @@ ROAD_WIDTHS_M = {
     "cycleway": 1.5,
     "steps": 1.5,
 }
+AIRFIELD_WIDTHS_M = {"runway": 45.0, "taxiway": 23.0}
 WATERWAY_WIDTHS_M = {"river": 30.0, "canal": 8.0, "stream": 4.0, "drain": 2.0, "ditch": 2.0}
 WORLDCOVER_CLASSES = {
     10: "tree",
@@ -153,6 +154,38 @@ def water_polygons(features: list[Feature]) -> gpd.GeoDataFrame:
     ]
     rows = [{"name": f.tags.get("name")} for f in chosen]
     return _to_metric(rows, [f.geometry for f in chosen])
+
+
+def surfaces(features: list[Feature]) -> gpd.GeoDataFrame:
+    """Return paved airfield areas and sports grounds as polygons."""
+    rows, geometries, widths = [], [], []
+    for feature in features:
+        tags = feature.tags
+        aeroway = tags.get("aeroway")
+        if aeroway in AIRFIELD_WIDTHS_M and _is_line(feature.geometry):
+            rows.append({"kind": "paved"})
+            geometries.append(feature.geometry)
+            widths.append(AIRFIELD_WIDTHS_M[aeroway])
+        elif _is_polygon(feature.geometry):
+            if aeroway in ("apron", "helipad", "runway", "taxiway"):
+                kind = "paved"
+            elif tags.get("leisure") in ("pitch", "stadium") or (
+                tags.get("landuse") == "recreation_ground"
+            ):
+                kind = "pitch"
+            else:
+                continue
+            rows.append({"kind": kind})
+            geometries.append(feature.geometry)
+            widths.append(0.0)
+    if not rows:
+        return gpd.GeoDataFrame({"kind": []}, geometry=[], crs=METRIC_CRS)
+    frame = _to_metric(rows, geometries)
+    wide = np.array(widths) > 0
+    frame.loc[wide, "geometry"] = frame.geometry[wide].buffer(
+        np.array(widths)[wide] / 2, cap_style="flat"
+    )
+    return frame
 
 
 def points_of_interest(features: list[Feature]) -> gpd.GeoDataFrame:
@@ -306,6 +339,9 @@ def prepare(area: Area) -> None:
         "pois": points_of_interest(features).pipe(lambda p: p[p.geometry.within(patch)]),
         "buildings": buildings,
     }
+    paved = surfaces(features)
+    if not paved.empty:
+        layers["surfaces"] = paved.assign(geometry=paved.geometry.intersection(patch))
 
     target = derived_path(area)
     target.parent.mkdir(parents=True, exist_ok=True)

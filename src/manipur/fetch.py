@@ -8,8 +8,8 @@ import json
 import time
 from pathlib import Path
 
-import rasterio
 import osmium
+import rasterio
 import requests
 import s2sphere
 from pyproj import Transformer
@@ -126,13 +126,13 @@ class _AreaExtract(osmium.SimpleHandler):
 
     def __init__(self, area: Area, member_ways: set[int]) -> None:
         super().__init__()
-        self.area = area
+        self.region = area
         self.member_ways = member_ways
         self.member_points: dict[int, list[dict[str, float]]] = {}
         self.elements: list[dict] = []
 
     def _inside(self, lat: float, lon: float) -> bool:
-        west, south, east, north = self.area.bounds
+        west, south, east, north = self.region.bounds
         return south <= lat <= north and west <= lon <= east
 
     def node(self, node) -> None:

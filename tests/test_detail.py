@@ -3,7 +3,13 @@ import numpy as np
 import shapely
 from PIL import Image
 
-from manipur.detail import SLOTS_32, TRANSPARENT, detail_colors, render_detail
+from manipur.detail import (
+    SLOTS_32,
+    TRANSPARENT,
+    build_scene,
+    detail_colors,
+    render_detail,
+)
 from manipur.render import PROJECTION_B, Layers, centered_viewport
 
 
@@ -30,8 +36,9 @@ def test_detail_palette_stays_within_the_limit():
 def test_detail_render_is_deterministic_and_grows_trees():
     layers = sample_layers()
     view = centered_viewport(PROJECTION_B, 150, 150, 600, 600)
-    first = render_detail(layers, view)
-    assert np.array_equal(first, render_detail(layers, view))
+    scene = build_scene(layers)
+    first = render_detail(scene, view)
+    assert np.array_equal(first, render_detail(scene, view))
     painted = set(np.unique(first).tolist())
     assert {SLOTS_32["canopy_light"], SLOTS_32["water"], SLOTS_32["wall_lit"]} <= painted
 

@@ -31,3 +31,22 @@ for an agent to debug from PNG diffs. Revisit only if Phase 3 is painful.
 512 px WebP Deep Zoom pyramid via libvips; OpenSeadragon, vanilla TypeScript,
 Vite; Cloudflare Pages + R2. Same shape as the reference sites so the viewer
 code can borrow from isometric-nyc (MIT) where useful.
+
+## 2026-11-08 — Phase 0 plumbing
+
+Python is pinned to 3.12 so the geo stack installs from wheels without GDAL.
+Open Buildings is streamed from the S2 level 6 cell and filtered to the area, so
+the full cell never touches the disk. 2.5D heights come from the public
+`open-buildings-temporal-data` bucket, so no Earth Engine account is needed.
+
+Footprints: Open Buildings polygons need confidence of at least 0.70. One is
+a duplicate of an OSM building, which wins, at IoU of at least 0.30 or when at
+least 50% of it lies inside the OSM polygon. One at least 50% on mapped water is
+dropped. Heights prefer OSM tags, then the 75th percentile of the 2023 raster
+inside the footprint (the raster's effective 4 m resolution smears edges), then
+3.5 m or 6.5 m by footprint area; all are clamped to 2.5–80 m. Rivers mapped only
+as lines default to 30 m wide.
+
+Rendering paints semantic color slots, then applies a palette, so a palette
+change never re-renders geometry. Each building's depth is its centroid. DEM is
+left out until Phase 3 because the patch is on the flat valley floor.

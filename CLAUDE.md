@@ -50,6 +50,9 @@ decision says so. No GPU required for Phases 0 to 3.
 uv sync                                  # installs the pinned Python 3.12 environment
 uv run manipur fetch  --area kangla      # downloads into data/raw/<area>/
 uv run manipur plan   --area kangla      # writes a top-down check to out/<area>/
+uv run manipur prepare --area kangla     # writes data/derived/<area>.gpkg and stats
+uv run manipur render --area kangla      # writes projection A and B frames to out/<area>/
+uv run manipur swatches --area kangla    # writes the candidate palette sheet to out/<area>/
 uv run pytest                            # runs the tests
 uv run ruff check .                      # lints
 ```

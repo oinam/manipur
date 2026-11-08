@@ -1,0 +1,76 @@
+# CLAUDE.md
+
+An isometric pixel-art map of Manipur, starting with Imphal, rendered procedurally
+from free, openly licensed data. Read `docs/PLAN.md` once before doing anything;
+it is the brief. `docs/RESEARCH.md` is the prior art, `docs/DECISIONS.md` is what
+has already been settled, `docs/DATA.md` is the register of every source we use.
+
+## The three rules
+
+1. **No pixels from photographs.** Nothing in the output may derive from satellite
+   or aerial imagery, Google/Esri/Bing tiles, Street View, or photogrammetry. Open
+   rasters (Sentinel-2, WorldCover, DEM) may *drive* the renderer (land cover
+   class, elevation, tree density) but are never sampled for colour or texture.
+   Landmark sprites may be drawn from reference photos only when those photos are
+   on Wikimedia Commons under CC BY / CC BY-SA / CC0 / public domain, and the
+   sprite is a drawing, not a filtered photo.
+2. **Licence-clean, or it does not go in.** Every source gets a row in
+   `docs/DATA.md` with licence, URL, download date and what we use it for, before
+   the first line of code touches it. If you are unsure of a licence, stop and ask.
+3. **Deterministic and regenerable.** Same inputs, same seed, same output. The map
+   must rebuild from `data/raw/` with one command. No hand-edited pixels in the
+   pipeline output; manual art lives in `assets/sprites/` as named source files.
+
+## Who decides what
+
+Brajeshwar owns the look: palette, projection, tile vocabulary, which landmarks
+get sprites, what the site is called. You propose by rendering options into
+`out/` as PNGs and asking; you do not pick. Everything else (data plumbing,
+renderer internals, tiling, viewer code) is yours to decide and document in
+`docs/DECISIONS.md`.
+
+## How to work here
+
+This is a spare-time project done in short sessions, often while other things
+run. So: small tasks, each ending in something visible. Every session should
+leave a new PNG in `out/` that Brajeshwar can look at in ten seconds. If a task
+cannot produce a picture, it is probably too big; split it.
+
+Do not start Phase N+1 while Phase N has an open go/no-go. Phases and their
+exit criteria are in `docs/PLAN.md`.
+
+Prefer boring tools. Python with `uv`, GeoPandas/Shapely/Rasterio/pyproj for
+data, NumPy + Pillow for the first renderer, libvips for the tile pyramid,
+vanilla TypeScript + OpenSeadragon for the viewer. No framework unless a
+decision says so. No GPU required for Phases 0 to 3.
+
+## Commands
+
+Not yet created. Phase 0 should produce, at minimum:
+
+```
+uv run manipur fetch  --area kangla      # downloads into data/raw/<area>/
+uv run manipur render --area kangla      # writes out/<area>/<timestamp>.png
+```
+
+Add `make`/`just` targets as they appear and keep this list current.
+
+## Git
+
+Branch per phase (`phase-0-feasibility`, `phase-1-imphal`, ...). Commit often,
+small, with messages that say what changed in the picture. Never force-push.
+Do not push unless asked. Remote: `git@github.com:oinam/manipur.git`.
+
+## /odo
+
+The usual Oinam convention, once Brajeshwar creates the files:
+
+- Queue: `~/_/Oinam/1-Projects/devCommands/manipur.md`
+- Log:   `~/_/Oinam/1-Projects/devLogs/manipur.md`
+
+## Things that are explicitly parked
+
+AI restyling of the render with an image model (Qwen-Image-Edit LoRA, Nano
+Banana passes, MultiDiffusion sampling). It is Phase 5 and may never happen.
+Do not build towards it or let it shape the architecture; the procedural map
+must stand on its own.

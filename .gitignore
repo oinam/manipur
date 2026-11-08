@@ -1,0 +1,27 @@
+# data and renders are regenerated, never committed
+data/raw/
+data/derived/
+out/
+*.tif
+*.tiff
+*.pbf
+*.gpkg
+*.parquet
+*.dzi
+*_files/
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.ruff_cache/
+.pytest_cache/
+
+# node
+node_modules/
+web/dist/
+.wrangler/
+
+# os / editors
+.DS_Store
+.claude/settings.local.json

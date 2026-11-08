@@ -106,3 +106,17 @@ Brajeshwar chose `manipur.oinam.com` for the site, and Latin labels for now.
 The map is served as Cloudflare Workers static assets in the Oinam account, with
 `manipur.oinam.com` as its custom domain. This replaces the planned Pages + R2:
 161 MB in about 3,500 files needs no R2, and Wrangler attaches the domain itself.
+
+## 2026-11-08 — Landmarks, labels, and tilt-shift
+
+Landmarks come from the list in `PLAN.md`. A mapped building keeps its real
+footprint and gets a painted style (`assets/landmarks.json`); a small point-like
+monument is a sprite at its mapped position (`assets/sprites/`). All are drawn in
+code from the palette's 32 slots, so the domes are pale rather than true gold. The
+gate is drawn 1.7 times scale and the Kangla Sha about 2.5 times, so their forms read.
+
+The two war cemeteries are a ground pattern on their OSM polygons. Grave positions
+are a regular grid, not surveyed.
+
+Labels are viewer overlays rather than pixels in the tiles, so changing script
+later needs no re-render. Tilt-shift is a CSS blur that appears when zoomed out.

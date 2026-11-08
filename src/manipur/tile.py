@@ -16,7 +16,7 @@ TILE_PX = 512
 CEMETERY_CREDIT = Path("assets/cemetery.json")
 AREA_KINDS = {"city", "suburb", "town"}
 LOCALITY_KINDS = {"village", "neighbourhood", "locality", "quarter", "hamlet"}
-NOTABLE_KINDS = {"landmark", "university", "bus_station"}
+NOTABLE_KINDS = {"landmark", "university"}
 NOTABLE_NAMES = {"Kangla Palace", "Imphal War Cemetery", "Imphal Indian War Cemetary"}
 TILE_SUFFIX = ".webp[lossless=true,effort=4]"
 

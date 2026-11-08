@@ -34,7 +34,7 @@ Notes on how each of these was made are in `docs/RESEARCH.md`.
 
 ## Status
 
-Phase 1 (Imphal v1) is live at https://manipur.oinam.com: the full municipal bbox, a zoomable viewer, search, and shareable URLs. Phase 0 closed with projection B, 0.5 m/px, and the monsoon palette; see `docs/DECISIONS.md`.
+Phase 1 (Imphal v1) is live at https://manipur.oinam.com: the full municipal bbox, a zoomable viewer, search, and shareable URLs. Phase 2 (landmarks and polish) is in progress. Phase 0 closed with projection B, 0.5 m/px, and the monsoon palette; see `docs/DECISIONS.md`.
 
 ## Layout
 

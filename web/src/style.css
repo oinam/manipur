@@ -174,8 +174,9 @@ button:focus-visible,
   letter-spacing: 0.02em;
 }
 
+/* OpenSeadragon sets display inline on every overlay, so hiding one needs !important. */
 .label[hidden] {
-  display: none;
+  display: none !important;
 }
 
 .marker {

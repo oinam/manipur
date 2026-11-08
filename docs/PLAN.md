@@ -1,5 +1,24 @@
 # Plan
 
+## Status
+
+*Phase 0, Kangla patch, 2026-11-08. Rendered and awaiting the go/no-go: does the
+street pattern read as Imphal?*
+
+- **Chosen:** projection B, 0.5 m/px, `monsoon` palette.
+- **Footprints:** 57 OSM and 8,170 Open Buildings polygons, 127 (1.6%) of them
+  overlapping an OSM building. 7,034 remain after dropping 1,106 below 0.70
+  confidence, 62 duplicates of OSM, and 25 on mapped water.
+- **Open Buildings noise:** looks extrudable without hand-fixing; awaiting
+  confirmation from someone who knows the ground. Footprints follow the road
+  grid, 197 polygons are under 10 m², and a few merged blobs reach 4,539 m².
+- **Heights:** 6,845 from the 2.5D raster, 19 from OSM tags, 170 defaults.
+- **Render time:** under a second per frame; reruns are byte-identical.
+- **What looked wrong:** WorldCover's 10 m cells show as stair-steps in the
+  ground, most visibly inside Kangla, and OSM land use is fetched but unused.
+  Rivers mapped only as lines use a default 30 m width. Trees, labels, and
+  building types are not drawn yet.
+
 *Draft 1, 8 November 2026. Written so that Brajeshwar can decide whether to
 spend spare time on this, and so that Claude Code can pick it up cold.*
 
@@ -179,9 +198,6 @@ Stop, or re-scope, if any of these happens:
 
 ## Open decisions for Brajeshwar
 
-1. Projection A or B (after Phase 0 renders).
-2. Pixel scale, 0.5 m/px proposed.
-3. Palette, from the swatch sheet.
-4. Site name and domain. `manipur.oinam.com` proposed.
-5. Which landmarks get sprites first.
-6. Whether labels are in Meitei Mayek, Latin, or both.
+1. Site name and domain. `manipur.oinam.com` proposed.
+2. Which landmarks get sprites first.
+3. Whether labels are in Meitei Mayek, Latin, or both.

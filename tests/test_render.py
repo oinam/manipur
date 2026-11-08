@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 import shapely
 
-from manipur.palettes import CANDIDATES, PLACEHOLDER, SLOT, SLOTS
+from manipur.palettes import CANDIDATES, SLOT, SLOTS
 from manipur.render import (
     PROJECTION_A,
     PROJECTION_B,
@@ -48,11 +48,7 @@ def test_render_is_deterministic_and_paints_every_layer(projection):
     assert {SLOT["grass"], SLOT["water"], SLOT["wall_lit"], SLOT["wall_shade"]} <= painted
 
 
-@pytest.mark.parametrize("palette", [PLACEHOLDER, *CANDIDATES.values()])
+@pytest.mark.parametrize("palette", CANDIDATES.values())
 def test_palettes_fill_every_slot_within_the_limit(palette):
     assert set(palette) == set(SLOTS)
     assert len(set(palette.values())) <= 32
-
-
-def test_placeholder_has_eight_colors():
-    assert len(set(PLACEHOLDER.values())) == 8

@@ -50,3 +50,8 @@ as lines default to 30 m wide.
 Rendering paints semantic color slots, then applies a palette, so a palette
 change never re-renders geometry. Each building's depth is its centroid. DEM is
 left out until Phase 3 because the patch is on the flat valley floor.
+
+## 2026-11-08 — Projection, pixel scale, and palette
+
+Brajeshwar chose projection B (2:1 dimetric, 45° rotation), 0.5 m/px, and the
+`monsoon` palette from the swatch sheet. The renderer uses these by default.

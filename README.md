@@ -18,7 +18,7 @@ for the plan and `CLAUDE.md` for how an agent picks it up.
 
 ## Status
 
-Phase 0 (feasibility) rendered for the Kangla patch and awaiting the go/no-go: projection, pixel scale, and palette are still open.
+Phase 0 (feasibility) rendered for the Kangla patch and awaiting the go/no-go. Projection, pixel scale, and palette are chosen; see `docs/DECISIONS.md`.
 
 ## Layout
 

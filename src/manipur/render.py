@@ -19,7 +19,7 @@ from shapely.geometry import Polygon
 from shapely.geometry.polygon import orient
 
 from manipur.areas import Area
-from manipur.palettes import CANDIDATES, PLACEHOLDER, ROOF_SLOTS, SLOT, SLOTS, lookup
+from manipur.palettes import CANDIDATES, PALETTE, ROOF_SLOTS, SLOT, SLOTS, lookup
 from manipur.prepare import METRIC_CRS, derived_path
 
 SEED = 1891
@@ -97,7 +97,7 @@ PROJECTION_A = Projection(
     "a-tilt45-rot15", 15.0, math.sin(math.radians(45)), math.cos(math.radians(45))
 )
 PROJECTION_B = Projection("b-dimetric-2to1", 45.0, 0.5, math.cos(math.radians(30)))
-PROJECTIONS = (PROJECTION_A, PROJECTION_B)
+PROJECTIONS = (PROJECTION_B,)
 
 
 @dataclass(frozen=True)
@@ -285,7 +285,7 @@ def render(area: Area) -> None:
             started = time.perf_counter()
             slots = render_slots(layers, projection, view)
             output = target / f"{stamp}_{projection.name}_{label}.png"
-            to_image(slots, PLACEHOLDER).save(output, optimize=True)
+            to_image(slots, PALETTE).save(output, optimize=True)
             elapsed = time.perf_counter() - started
             print(f"{output}: {view.width} x {view.height}, {elapsed:.1f}s")
 

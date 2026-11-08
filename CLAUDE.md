@@ -51,7 +51,7 @@ uv sync                                  # installs the pinned Python 3.12 envir
 uv run manipur fetch  --area kangla      # downloads into data/raw/<area>/
 uv run manipur plan   --area kangla      # writes a top-down check to out/<area>/
 uv run manipur prepare --area kangla     # writes data/derived/<area>.gpkg and stats
-uv run manipur render --area kangla      # writes projection A and B frames to out/<area>/
+uv run manipur render --area kangla      # writes frame and full renders to out/<area>/
 uv run manipur swatches --area kangla    # writes the candidate palette sheet to out/<area>/
 uv run pytest                            # runs the tests
 uv run ruff check .                      # lints

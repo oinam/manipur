@@ -26,52 +26,12 @@ SLOTS = (
 SLOT = {name: index for index, name in enumerate(SLOTS)}
 ROOF_SLOTS = tuple(SLOT[f"roof_{index}"] for index in range(6))
 
-_TREE = "#3f6b3a"
-_GRASS = "#7da04f"
-_CROP = "#b4c066"
-_BUILT = "#bcae90"
-_WATER = "#3f7fb0"
-_SHADOW = "#55586a"
-_LIGHT = "#ddd3c2"
-_ROOF = "#b5533c"
-
-# Eight colors, for judging the geometry without being distracted by the look.
-PLACEHOLDER = dict(
-    zip(
-        SLOTS,
-        (
-            _SHADOW,  # background
-            _TREE,  # tree
-            _GRASS,  # shrub
-            _GRASS,  # grass
-            _CROP,  # crop
-            _BUILT,  # built
-            _BUILT,  # bare
-            _GRASS,  # wetland
-            _WATER,  # water
-            _SHADOW,  # road_major
-            _SHADOW,  # road_minor
-            _BUILT,  # road_track
-            _LIGHT,  # road_line
-            _LIGHT,  # wall_lit
-            _SHADOW,  # wall_shade
-            _ROOF,  # roof_0
-            _ROOF,  # roof_1
-            _ROOF,  # roof_2
-            _LIGHT,  # roof_3
-            _LIGHT,  # roof_4
-            _LIGHT,  # roof_5
-        ),
-        strict=True,
-    )
-)
-
 
 def _palette(*colors: str) -> dict[str, str]:
     return dict(zip(SLOTS, colors, strict=True))
 
 
-# Candidates for Brajeshwar to choose from. None of these is a decision.
+# Candidates shown on the swatch sheet; see PALETTE below for the one in use.
 CANDIDATES = {
     "monsoon": _palette(
         "#1f2a2e",
@@ -166,6 +126,8 @@ CANDIDATES = {
         "#7f7a68",
     ),
 }
+
+PALETTE = CANDIDATES["monsoon"]
 
 
 def lookup(palette: dict[str, str]) -> bytes:

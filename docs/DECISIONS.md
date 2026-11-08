@@ -100,3 +100,9 @@ still open in `PLAN.md`; the viewer's title is a placeholder.
 ## 2026-11-08 — Domain and labels
 
 Brajeshwar chose `manipur.oinam.com` for the site, and Latin labels for now.
+
+## 2026-11-08 — Hosting
+
+The map is served as Cloudflare Workers static assets in the Oinam account, with
+`manipur.oinam.com` as its custom domain. This replaces the planned Pages + R2:
+161 MB in about 3,500 files needs no R2, and Wrangler attaches the domain itself.

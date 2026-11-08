@@ -8,8 +8,8 @@ the Phase 0 record.*
 
 **Phase 1, 2026-11-08.** Imphal renders end to end and runs locally: 262,527 buildings,
 162 frames in about 150 seconds, a 161 MB pyramid, a viewer with search and
-shareable URLs. Hosting waits on the go-ahead to publish at `manipur.oinam.com`. The Phase 1 exit (a link
-a Manipuri friend recognizes) is still open.
+shareable URLs. Live at https://manipur.oinam.com. The Phase 1 exit (a link a Manipuri friend
+recognizes) is still open.
 
 **Phase 0 record:**
 

@@ -18,7 +18,7 @@ for the plan and `CLAUDE.md` for how an agent picks it up.
 
 ## Status
 
-Phase 1 (Imphal v1) runs locally: the full municipal bbox, a zoomable viewer, search, and shareable URLs. It is not hosted yet. Phase 0 closed with projection B, 0.5 m/px, and the monsoon palette; see `docs/DECISIONS.md`.
+Phase 1 (Imphal v1) is live at https://manipur.oinam.com: the full municipal bbox, a zoomable viewer, search, and shareable URLs. Phase 0 closed with projection B, 0.5 m/px, and the monsoon palette; see `docs/DECISIONS.md`.
 
 ## Layout
 

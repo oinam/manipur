@@ -1,5 +1,6 @@
 {
   "name": "manipur",
+  "account_id": "091e65b116deac24fcc274459b6fbde0",
   "compatibility_date": "2026-11-01",
   "assets": { "directory": "../out/imphal/site" },
   "routes": [{ "pattern": "manipur.oinam.com", "custom_domain": true }]

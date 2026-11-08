@@ -1,0 +1,25 @@
+{
+  "name": "Kangla Sha, one of the pair of statues inside Kangla",
+  "drawn_by": "tools/draw_sprites.py, from shapes in code; no photo pixels are read",
+  "sprite": "kangla_sha.png",
+  "anchor_px": [
+    18,
+    32
+  ],
+  "clearing_m": 8.0,
+  "placed_at": {
+    "lon": 93.94265,
+    "lat": 24.80751,
+    "method": "OSM tourism=artwork node 'Kangla Dragon'",
+    "confidence": "mapped"
+  },
+  "scale_note": "Drawn about 2.5 times scale so the form reads.",
+  "references": [
+    {
+      "url": "https://commons.wikimedia.org/wiki/File:A_colossal_pair_of_classical_statues_dedicated_to_Kanglasha,_the_ancient_Meitei_dragon_lion_deity,_standing_inside_the_Kangla_Fort_in_Imphal.jpg",
+      "license": "CC BY-SA 4.0",
+      "author": "Haoreima"
+    }
+  ],
+  "label": "Kangla Sha"
+}

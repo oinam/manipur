@@ -135,6 +135,49 @@ button:focus-visible,
   color: var(--ink);
 }
 
+.tilt {
+  position: fixed;
+  right: 0;
+  left: 0;
+  height: 24vh;
+  opacity: var(--tilt, 0);
+  backdrop-filter: blur(3px);
+  pointer-events: none;
+}
+
+.tilt-top {
+  top: 0;
+  mask-image: linear-gradient(to bottom, #000 25%, transparent);
+}
+
+.tilt-bottom {
+  bottom: 0;
+  mask-image: linear-gradient(to top, #000 25%, transparent);
+}
+
+.label {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-shadow:
+    -1px -1px 0 var(--bg),
+    1px -1px 0 var(--bg),
+    -1px 1px 0 var(--bg),
+    1px 1px 0 var(--bg);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.label-1 {
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+.label[hidden] {
+  display: none;
+}
+
 .marker {
   width: 22px;
   height: 22px;

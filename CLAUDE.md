@@ -54,7 +54,7 @@ uv run manipur prepare --area kangla     # writes data/derived/<area>.gpkg and s
 uv run manipur render --area kangla      # writes frame and full renders to out/<area>/
 uv run manipur swatches --area kangla    # writes the candidate palette sheet to out/<area>/
 uv run manipur detail --area kangla-sw   # writes the near-final 900 px crop to out/<area>/
-uv run python tools/draw_shaheed_minar.py # redraws the landmark sprite in assets/sprites/
+uv run python tools/draw_sprites.py      # redraws the landmark sprites in assets/sprites/
 uv run manipur frames --area imphal      # renders the area as seamless 2048 px frames
 uv run manipur tile   --area imphal      # builds the Deep Zoom pyramid and search index
 pnpm --dir web install && pnpm --dir web build   # builds the viewer into web/dist

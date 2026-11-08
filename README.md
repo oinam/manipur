@@ -1,4 +1,4 @@
-# manipur
+# Manipur
 
 An isometric pixel-art map of Manipur, starting with Imphal, built entirely from
 free and openly licensed map data. No photographs, no satellite imagery in the

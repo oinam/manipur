@@ -45,6 +45,7 @@ CROP_CENTER = (93.93759, 24.80343)
 CROP_PX = 900
 PROJECTION = PROJECTION_B
 SPRITE_DIR = Path("assets/sprites")
+LANDMARKS_PATH = Path("assets/landmarks.json")
 TRANSPARENT = 255
 
 _EXTRA = (
@@ -101,6 +102,9 @@ STOREY_M = 3.2
 BLUR_RADIUS_PX = 16
 FOOTPATH_M = 1.8
 MINAR_CLEARING_M = 16.0
+PIXELS_PER_METER_DETAIL = 2.0
+CEMETERY_ROW_M = 5.5
+CEMETERY_GRAVE_M = 4.0
 FRAME_PX = 2048
 # Wider than the tallest building's lift, the ground blur, and any sprite, so frames join exactly.
 APRON_PX = 256
@@ -263,7 +267,39 @@ def _paint_paddy(canvas: np.ndarray, crop: np.ndarray, xs: np.ndarray, ys: np.nd
     canvas[bund] = SLOTS_32["bare"]
 
 
+def _paint_cemetery(canvas: np.ndarray, part: gpd.GeoDataFrame, view: Viewport) -> None:
+    """Draw mown grass, a clipped hedge, and rows of grave markers."""
+    mask = _burn([(geometry, 1) for geometry in part.geometry], view).astype(bool)
+    canvas[mask] = SLOTS_32["grass"]
+    interior = mask.copy()
+    for axis, shift in ((0, 3), (0, -3), (1, 3), (1, -3)):
+        interior &= np.roll(mask, shift, axis=axis)
+    canvas[mask & ~interior] = SLOTS_32["tree"]
+    a, b, d, e = PROJECTION.matrix
+    for geometry in part.geometry:
+        polygons = geometry.geoms if geometry.geom_type == "MultiPolygon" else [geometry]
+        for polygon in polygons:
+            center, u, v, length, width = _ground_axes(polygon)
+            usable = polygon.buffer(-3.0)
+            shapely.prepare(usable)
+            along = np.arange(-length / 2, length / 2, CEMETERY_GRAVE_M)
+            across = np.arange(-width / 2, width / 2, CEMETERY_ROW_M)
+            grid_u, grid_v = np.meshgrid(along, across)
+            xs = center[0] + u[0] * grid_u.ravel() + v[0] * grid_v.ravel()
+            ys = center[1] + u[1] * grid_u.ravel() + v[1] * grid_v.ravel()
+            inside = shapely.contains_xy(usable, xs, ys)
+            for x, y in zip(xs[inside], ys[inside], strict=True):
+                col = round(a * x + b * y + view.x_offset)
+                row = round(d * x + e * y + view.y_offset)
+                if 2 <= col < view.width - 2 and 2 <= row < view.height - 2:
+                    canvas[row - 1, col - 1 : col + 2] = SLOTS_32["wall_lit"]
+                    canvas[row, col - 1 : col + 2] = SLOTS_32["wall_shade"]
+
+
 def _paint_surfaces(canvas: np.ndarray, surfaces: gpd.GeoDataFrame, view: Viewport) -> None:
+    cemeteries = surfaces[surfaces.kind == "cemetery"]
+    if not cemeteries.empty:
+        _paint_cemetery(canvas, cemeteries, view)
     for kind, slot in (("pitch", "grass"), ("paved", "road_minor")):
         part = surfaces[surfaces.kind == kind]
         mask = _burn([(geometry, 1) for geometry in part.geometry], view).astype(bool)
@@ -396,7 +432,18 @@ def _windows(draw, view, p, q, top, lit, shutters: bool) -> None:
         storey += 1
 
 
-def _paint_walls(draw, view, ring, top, gable_top, shutters, windows) -> None:
+def _paint_walls(
+    draw,
+    view,
+    ring,
+    top,
+    gable_top,
+    shutters,
+    windows,
+    lit_slot=None,
+    shade_slot=None,
+    decorate=None,
+) -> None:
     """Draw camera-facing walls; ring is counterclockwise and closed."""
     edges = []
     for index in range(len(ring) - 1):
@@ -409,7 +456,9 @@ def _paint_walls(draw, view, ring, top, gable_top, shutters, windows) -> None:
     edges.sort(key=lambda edge: edge[0])
     visible = {edge[1] for edge in edges}
     for _, index, p, q, lit in edges:
-        fill = SLOTS_32["wall_lit"] if lit else SLOTS_32["wall_shade"]
+        wall_lit = SLOTS_32["wall_lit"] if lit_slot is None else lit_slot
+        wall_shade = SLOTS_32["wall_shade"] if shade_slot is None else shade_slot
+        fill = wall_lit if lit else wall_shade
         quad = [
             _project(view, *p, 0),
             _project(view, *q, 0),
@@ -430,6 +479,8 @@ def _paint_walls(draw, view, ring, top, gable_top, shutters, windows) -> None:
             )
         if windows:
             _windows(draw, view, p, q, top, lit, shutters)
+        if decorate:
+            decorate(p, q, lit)
         draw.line([_project(view, *p, 0), _project(view, *q, 0)], fill=outline)
     count = len(ring) - 1
     for index in range(count):
@@ -528,7 +579,406 @@ def _paint_flat(draw, view, polygon, height, slot, shade, kind, building_id, see
         draw.line([(x - 1, y - 4), (x + 1, y - 4)], fill=SLOTS_32["road_major"])
 
 
-def _paint_building(draw, view, polygon, height, building_id, seed) -> None:
+def _ground_axes(polygon):
+    """Return (center, long unit vector, short unit vector, length, width) of the footprint."""
+    corners = np.array(shapely.minimum_rotated_rectangle(polygon).exterior.coords)[:4]
+    side_a, side_b = corners[1] - corners[0], corners[2] - corners[1]
+    length_a, length_b = float(np.linalg.norm(side_a)), float(np.linalg.norm(side_b))
+    if length_a < length_b:
+        side_a, side_b, length_a, length_b = side_b, side_a, length_b, length_a
+    return corners.mean(axis=0), side_a / length_a, side_b / length_b, length_a, length_b
+
+
+def _facing_left(outward) -> bool:
+    angle = math.radians(PROJECTION.rotation_deg)
+    return math.cos(angle) * outward[0] + math.sin(angle) * outward[1] < 0
+
+
+def _rect_ring(center, u, v, half_u, half_v) -> np.ndarray:
+    """Return a closed counterclockwise ring for a rectangle on the ground."""
+    ring = [
+        center - u * half_u - v * half_v,
+        center + u * half_u - v * half_v,
+        center + u * half_u + v * half_v,
+        center - u * half_u + v * half_v,
+    ]
+    area2 = sum(
+        ring[i][0] * ring[(i + 1) % 4][1] - ring[(i + 1) % 4][0] * ring[i][1] for i in range(4)
+    )
+    if area2 < 0:
+        ring.reverse()
+    return np.array([*ring, ring[0]])
+
+
+def _gable_roof(draw, view, center, u, v, half_u, half_v, base, rise, lit, shade, end) -> None:
+    """Draw a roof whose ridge runs along u, with filled gable ends."""
+    outline = SLOTS_32["background"]
+    ridge = base + rise
+    a, b = center - u * half_u, center + u * half_u
+    for sign, tip in ((-1, a), (1, b)):
+        outward = u * sign
+        if _depth(*(tip + outward)) < _depth(*tip):
+            draw.polygon(
+                [
+                    _project(view, *(tip - v * half_v), base),
+                    _project(view, *(tip + v * half_v), base),
+                    _project(view, *tip, ridge),
+                ],
+                fill=end,
+                outline=outline,
+            )
+    slopes = sorted((-1, 1), key=lambda sign: -_depth(*(center + v * sign * half_v)))
+    for sign in slopes:
+        edge = v * sign * half_v
+        draw.polygon(
+            [
+                _project(view, *(a + edge), base),
+                _project(view, *(b + edge), base),
+                _project(view, *b, ridge),
+                _project(view, *a, ridge),
+            ],
+            fill=lit if _facing_left(v * sign) else shade,
+            outline=outline,
+        )
+
+
+def _pyramid_roof(draw, view, center, u, v, half_u, half_v, base, rise, lit, shade) -> None:
+    outline = shade
+    ring = _rect_ring(center, u, v, half_u, half_v)
+    faces = sorted(range(4), key=lambda i: -_depth(*((ring[i] + ring[i + 1]) / 2)))
+    for index in faces:
+        p, q = ring[index], ring[index + 1]
+        draw.polygon(
+            [
+                _project(view, *p, base),
+                _project(view, *q, base),
+                _project(view, *center, base + rise),
+            ],
+            fill=lit if _normal(p, q)[0] < 0 else shade,
+            outline=outline,
+        )
+
+
+def _wall_arch(draw, view, p, q, t0, t1, top, fill) -> None:
+    """Draw a round-headed opening on a wall between fractions t0 and t1 of its length."""
+    spring = top * 0.6
+    points = [(t0, 0.2), (t1, 0.2), (t1, spring)]
+    for step in range(1, 8):
+        theta = math.pi * step / 8
+        middle = (t0 + t1) / 2
+        points.append(
+            (middle + (t1 - t0) / 2 * math.cos(theta), spring + (top - spring) * math.sin(theta))
+        )
+    points.append((t0, spring))
+    draw.polygon([_project(view, *(p + (q - p) * t), z) for t, z in points], fill=fill)
+
+
+def _dome(draw, view, center, base, radius_m, lit, shade) -> None:
+    x, y = _project(view, *center, base)
+    radius = round(radius_m * PIXELS_PER_METER_DETAIL)
+    rows = round(radius * 1.15)
+    for row in range(rows + 1):
+        half = round(radius * math.sqrt(max(0.0, 1 - (row / rows) ** 2)))
+        if half:
+            split = x + round(half * 0.35)
+            draw.line([(x - half, y - row), (split, y - row)], fill=lit)
+            draw.line([(split + 1, y - row), (x + half, y - row)], fill=shade)
+            draw.point([(x - half, y - row), (x + half, y - row)], fill=SLOTS_32["background"])
+    draw.line([(x - radius, y), (x + radius, y)], fill=SLOTS_32["background"])
+    draw.line([(x, y - rows - 8), (x, y - rows)], fill=SLOTS_32["roof_1"])
+    draw.line([(x - 2, y - rows - 5), (x + 2, y - rows - 5)], fill=SLOTS_32["roof_1"])
+
+
+def _roof_cap(draw, view, polygon, height, edge, fill, inset=1.0) -> None:
+    outline = SLOTS_32["background"]
+    ring = polygon.exterior.coords
+    draw.polygon([_project(view, x, y, height) for x, y in ring], fill=edge, outline=outline)
+    inner = polygon.buffer(-inset, join_style="mitre")
+    if not inner.is_empty and inner.geom_type == "Polygon":
+        draw.polygon([_project(view, x, y, height) for x, y in inner.exterior.coords], fill=fill)
+
+
+def _module_centers(polygon, center, u, v, length, width, step_u, step_v, inset) -> list:
+    """Return roof module centers on a footprint-aligned grid, inside the footprint."""
+    usable = polygon.buffer(-inset)
+    points = []
+    for i in range(-int(length / step_u), int(length / step_u) + 1):
+        for j in range(-int(width / step_v), int(width / step_v) + 1):
+            point = center + u * i * step_u + v * j * step_v
+            if usable.contains(Point(point)):
+                points.append(point)
+    return sorted(points, key=lambda point: -_depth(*point))
+
+
+def _paint_temple(draw, view, polygon, height) -> None:
+    center, u, _, length, _ = _ground_axes(polygon)
+    ring = np.array(orient(polygon, 1.0).exterior.coords)
+
+    def arches(p, q, _lit):
+        count = max(1, int(float(np.linalg.norm(q - p)) / 9.0))
+        for index in range(count):
+            t0, t1 = (index + 0.18) / count, (index + 0.82) / count
+            _wall_arch(draw, view, p, q, t0, t1, height * 0.78, SLOTS_32["road_major"])
+            for t in (t0, t1):
+                point = p + (q - p) * t
+                draw.line(
+                    [_project(view, *point, 0.3), _project(view, *point, height * 0.5)],
+                    fill=SLOTS_32["road_line"],
+                )
+
+    _paint_walls(draw, view, ring, height, None, False, False, decorate=arches)
+    _roof_cap(draw, view, polygon, height, SLOTS_32["wall_lit"], SLOTS_32["road_line"], 1.2)
+    offset = min(9.0, length * 0.18)
+    domes = sorted((center - u * offset, center + u * offset), key=lambda point: -_depth(*point))
+    for point in domes:
+        x, y = _project(view, *point, height)
+        draw.rectangle(
+            [x - 13, y - 7, x + 13, y], fill=SLOTS_32["wall_lit"], outline=SLOTS_32["background"]
+        )
+        _dome(draw, view, point, height + 4.0, 6.5, SLOTS_32["road_line"], SLOTS_32["road_track"])
+
+
+def _paint_market(draw, view, polygon, height) -> None:
+    center, u, v, length, width = _ground_axes(polygon)
+    ring = np.array(orient(polygon, 1.0).exterior.coords)
+
+    def columns(p, q, lit):
+        wall = float(np.linalg.norm(q - p))
+        count = max(1, int(wall / 6.0))
+        rail = SLOTS_32["roof_0"]
+        draw.line([_project(view, *p, height * 0.48), _project(view, *q, height * 0.48)], fill=rail)
+        stripe = SLOTS_32["wall_lit"] if lit else SLOTS_32["road_line"]
+        for index in range(count + 1):
+            t = index / count
+            half = 0.45 / max(wall, 1.0)
+            a, b = p + (q - p) * max(0.0, t - half), p + (q - p) * min(1.0, t + half)
+            draw.polygon(
+                [
+                    _project(view, *a, 0.2),
+                    _project(view, *b, 0.2),
+                    _project(view, *b, height - 0.8),
+                    _project(view, *a, height - 0.8),
+                ],
+                fill=stripe,
+            )
+
+    _paint_walls(
+        draw,
+        view,
+        ring,
+        height,
+        None,
+        False,
+        False,
+        SLOTS_32["roof_1"],
+        SLOTS_32["roof_shade_1"],
+        columns,
+    )
+    _roof_cap(draw, view, polygon, height, SLOTS_32["road_line"], SLOTS_32["roof_1"], 1.3)
+    for point in _module_centers(polygon, center, u, v, length, width, 17.0, 15.0, 7.0):
+        _gable_roof(
+            draw,
+            view,
+            point,
+            v,
+            u,
+            7.5,
+            5.0,
+            height,
+            4.5,
+            SLOTS_32["roof_0"],
+            SLOTS_32["roof_shade_0"],
+            SLOTS_32["road_line"],
+        )
+
+
+def _paint_stand(draw, view, polygon, height) -> None:
+    center, u, v, length, width = _ground_axes(polygon)
+    ring = np.array(orient(polygon, 1.0).exterior.coords)
+    _paint_walls(draw, view, ring, height, None, False, False)
+    _roof_cap(draw, view, polygon, height, SLOTS_32["wall_lit"], SLOTS_32["roof_0"], 0.7)
+    for row in np.arange(-width / 2 + 1.8, width / 2 - 1.0, 1.6):
+        a = center + v * row - u * (length / 2 - 1.0)
+        b = center + v * row + u * (length / 2 - 1.0)
+        draw.line(
+            [_project(view, *a, height), _project(view, *b, height)], fill=SLOTS_32["roof_shade_0"]
+        )
+
+
+def _paint_pavilion(draw, view, polygon, height) -> None:
+    center, u, v, length, width = _ground_axes(polygon)
+    _paint_stand(draw, view, polygon, 3.0)
+    posts = []
+    for along in np.linspace(-length / 2 + 1.5, length / 2 - 1.5, 7):
+        for side in (-width / 2 + 1.5, width / 2 - 1.5):
+            posts.append(center + u * along + v * side)
+    for post in sorted(posts, key=lambda point: -_depth(*point)):
+        draw.line(
+            [_project(view, *post, 3.0), _project(view, *post, height)], fill=SLOTS_32["wall_lit"]
+        )
+    _gable_roof(
+        draw,
+        view,
+        center,
+        u,
+        v,
+        length / 2 + 1.0,
+        width / 2 + 1.0,
+        height,
+        1.6,
+        SLOTS_32["roof_2"],
+        SLOTS_32["roof_shade_2"],
+        SLOTS_32["road_line"],
+    )
+
+
+def _paint_terminal(draw, view, polygon, height) -> None:
+    center, u, v, length, width = _ground_axes(polygon)
+    ring = np.array(orient(polygon, 1.0).exterior.coords)
+
+    def glazing(p, q, lit):
+        draw.line(
+            [_project(view, *p, height * 0.62), _project(view, *q, height * 0.62)],
+            fill=SLOTS_32["road_line"],
+        )
+        count = max(1, int(float(np.linalg.norm(q - p)) / 5.0))
+        for index in range(count):
+            t0, t1 = (index + 0.15) / count, (index + 0.85) / count
+            a, b = p + (q - p) * t0, p + (q - p) * t1
+            draw.polygon(
+                [
+                    _project(view, *a, 0.8),
+                    _project(view, *b, 0.8),
+                    _project(view, *b, height * 0.55),
+                    _project(view, *a, height * 0.55),
+                ],
+                fill=SLOTS_32["road_major"] if lit else SLOTS_32["background"],
+            )
+
+    _paint_walls(
+        draw,
+        view,
+        ring,
+        height,
+        None,
+        False,
+        False,
+        SLOTS_32["water"],
+        SLOTS_32["water_dark"],
+        glazing,
+    )
+    _roof_cap(draw, view, polygon, height, SLOTS_32["wall_lit"], SLOTS_32["wetland"], 0.8)
+    for point in _module_centers(polygon, center, u, v, length, width, 27.0, 24.0, 8.0):
+        _pyramid_roof(
+            draw, view, point, u, v, 12.5, 11.0, height, 6.5, SLOTS_32["wetland"], SLOTS_32["shrub"]
+        )
+
+
+def _paint_gate(draw, view, polygon, height) -> None:
+    center, u, v, length, width = _ground_axes(polygon)
+    half_block = max(5.0, length * 0.3)
+    wing = max(3.0, (length / 2 - half_block) / 2)
+    half_v = width / 2
+    parts = [
+        ("wing", center - u * (half_block + wing)),
+        ("wing", center + u * (half_block + wing)),
+        ("block", center),
+    ]
+
+    def wing_wall(p, q, _lit):
+        count = max(1, int(float(np.linalg.norm(q - p)) / 3.2))
+        for index in range(count + 1):
+            point = p + (q - p) * (index / count)
+            draw.line(
+                [_project(view, *point, 0.2), _project(view, *point, height * 0.52)],
+                fill=SLOTS_32["roof_0"],
+            )
+        draw.line(
+            [_project(view, *p, height * 0.3), _project(view, *q, height * 0.3)],
+            fill=SLOTS_32["wall_lit"],
+        )
+
+    def block_wall(p, q, _lit):
+        if abs(float(np.dot((q - p) / np.linalg.norm(q - p), u))) > 0.7:
+            _wall_arch(draw, view, p, q, 0.08, 0.92, height * 0.86, SLOTS_32["wall_lit"])
+            _wall_arch(draw, view, p, q, 0.16, 0.84, height * 0.78, SLOTS_32["background"])
+
+    for kind, point in sorted(parts, key=lambda part: -_depth(*part[1])):
+        if kind == "wing":
+            top = height * 0.52
+            ring = _rect_ring(point, u, v, wing, half_v * 0.92)
+            _paint_walls(
+                draw,
+                view,
+                ring,
+                top,
+                None,
+                False,
+                False,
+                SLOTS_32["road_major"],
+                SLOTS_32["background"],
+                wing_wall,
+            )
+            _pyramid_roof(
+                draw,
+                view,
+                point,
+                u,
+                v,
+                wing * 1.08,
+                half_v,
+                top,
+                height * 0.26,
+                SLOTS_32["roof_3"],
+                SLOTS_32["roof_shade_3"],
+            )
+        else:
+            ring = _rect_ring(point, u, v, half_block, half_v)
+            _paint_walls(
+                draw,
+                view,
+                ring,
+                height,
+                None,
+                False,
+                False,
+                SLOTS_32["roof_5"],
+                SLOTS_32["roof_shade_5"],
+                block_wall,
+            )
+            # The gable faces the road, so the ridge runs across the footprint.
+            _gable_roof(
+                draw,
+                view,
+                point,
+                v,
+                u,
+                half_v + 0.8,
+                half_block + 0.8,
+                height,
+                height * 0.34,
+                SLOTS_32["roof_0"],
+                SLOTS_32["roof_shade_0"],
+                SLOTS_32["roof_5"],
+            )
+            x, y = _project(view, *point, height * 1.34)
+            draw.line([(x, y - 7), (x, y)], fill=SLOTS_32["roof_1"])
+
+
+STYLE_PAINTERS = {
+    "gate": _paint_gate,
+    "market": _paint_market,
+    "pavilion": _paint_pavilion,
+    "stand": _paint_stand,
+    "temple": _paint_temple,
+    "terminal": _paint_terminal,
+}
+
+
+def _paint_building(draw, view, polygon, height, building_id, seed, style=None) -> None:
+    if style:
+        STYLE_PAINTERS[style["style"]](draw, view, polygon, height)
+        return
     area = polygon.area
     envelope = shapely.minimum_rotated_rectangle(polygon).area
     rectangular = envelope > 0 and area / envelope >= 0.85 and not polygon.interiors
@@ -647,6 +1097,7 @@ class Scene:
     landmarks: list[dict]
     seed: int
     indexes: dict[str, shapely.STRtree]
+    styles: dict[str, dict]
 
 
 RADIUS_PX = (6, 7, 8, 9, 10, 12)
@@ -662,9 +1113,26 @@ def load_landmarks() -> list[dict]:
     for path in sorted(SPRITE_DIR.glob("*.json")):
         sidecar = json.loads(path.read_text())
         x, y = to_metric.transform(sidecar["placed_at"]["lon"], sidecar["placed_at"]["lat"])
-        sprite = np.asarray(Image.open(path.with_suffix(".png")))
-        landmarks.append({"x": x, "y": y, "sprite": sprite, "anchor": sidecar["anchor_px"]})
+        sprite = np.asarray(Image.open(SPRITE_DIR / sidecar.get("sprite", f"{path.stem}.png")))
+        landmarks.append(
+            {
+                "x": x,
+                "y": y,
+                "sprite": sprite,
+                "anchor": sidecar["anchor_px"],
+                "clearing": sidecar.get("clearing_m", MINAR_CLEARING_M),
+            }
+        )
     return landmarks
+
+
+def load_styles() -> dict[str, dict]:
+    """Return footprint landmark styles, keyed by the building they replace."""
+    styles = {}
+    for entry in json.loads(LANDMARKS_PATH.read_text()):
+        for building_id in entry["replaces"]:
+            styles[building_id] = entry
+    return styles
 
 
 def compute_trees(
@@ -677,7 +1145,7 @@ def compute_trees(
     trees = _tree_points(layers, surfaces, tree_rows, seed)
     for landmark in landmarks:
         distance = np.hypot(trees[:, 0] - landmark["x"], trees[:, 1] - landmark["y"])
-        trees = trees[distance > MINAR_CLEARING_M]
+        trees = trees[distance > landmark["clearing"]]
     return trees
 
 
@@ -688,12 +1156,22 @@ def build_scene(
     surfaces: gpd.GeoDataFrame | None = None,
     seed: int = SEED,
     trees: np.ndarray | None = None,
+    styles: dict[str, dict] | None = None,
 ) -> Scene:
     tree_rows = tree_rows or []
     landmarks = landmarks or []
     surfaces = empty_surfaces() if surfaces is None else surfaces
+    styles = styles or {}
     if trees is None:
         trees = compute_trees(layers, surfaces, tree_rows, landmarks, seed)
+        cleared = layers.buildings[layers.buildings.building_id.isin(list(styles))]
+        for row in cleared.itertuples():
+            clearing = styles[row.building_id].get("clearing_m")
+            if clearing and len(trees):
+                inside = shapely.contains_xy(
+                    row.geometry.buffer(clearing), trees[:, 0], trees[:, 1]
+                )
+                trees = trees[~inside]
     # Exploded so a frame only touches the ground fragments it can see.
     ground = layers.ground.explode(index_parts=False).reset_index(drop=True)
     local = Layers(
@@ -709,7 +1187,7 @@ def build_scene(
     }
     indexes = {name: shapely.STRtree(frame.geometry.values) for name, frame in frames.items()}
     sprites = [_tree_sprite(RADIUS_PX[index % 6], seed + index) for index in range(12)]
-    return Scene(local, surfaces, trees, sprites, landmarks, seed, indexes)
+    return Scene(local, surfaces, trees, sprites, landmarks, seed, indexes, styles)
 
 
 def _view_quad(view: Viewport) -> shapely.Polygon:
@@ -758,7 +1236,7 @@ def render_detail(scene: Scene, view: Viewport) -> np.ndarray:
     canvas = _paint_ground(local, view)
     _paint_surfaces(canvas, surfaces, view)
     for landmark in landmarks:
-        clearing = Point(landmark["x"], landmark["y"]).buffer(MINAR_CLEARING_M * 0.6)
+        clearing = Point(landmark["x"], landmark["y"]).buffer(landmark["clearing"] * 0.6)
         canvas[_burn([(clearing, 1)], view).astype(bool)] = SLOTS_32["bare"]
     _paint_water(canvas, local, view)
     _paint_roads(canvas, local, view)
@@ -767,12 +1245,17 @@ def render_detail(scene: Scene, view: Viewport) -> np.ndarray:
     shadows = []
     for row in local.buildings.itertuples():
         parts = row.geometry.geoms if row.geometry.geom_type == "MultiPolygon" else [row.geometry]
+        style = scene.styles.get(row.building_id)
+        height = style.get("height_m", row.height_m) if style else row.height_m
         for polygon in parts:
-            dx, dy = _sun_offset(row.height_m * SHADOW_PER_HEIGHT)
+            if style and "scale" in style:
+                factor = style["scale"]
+                polygon = shapely.affinity.scale(polygon, factor, factor, origin="centroid")
+            dx, dy = _sun_offset(height * SHADOW_PER_HEIGHT)
             moved = shapely.affinity.translate(polygon, dx, dy)
             shadows.append((shapely.convex_hull(shapely.union(polygon, moved)), 1))
             center = polygon.centroid
-            items.append((-_depth(center.x, center.y), row.building_id, 0, polygon, row.height_m))
+            items.append((-_depth(center.x, center.y), row.building_id, 0, polygon, height))
 
     trees = scene.trees
     screen_x, screen_y = screen(trees[:, 0], trees[:, 1])
@@ -807,7 +1290,7 @@ def render_detail(scene: Scene, view: Viewport) -> np.ndarray:
     items.sort(key=lambda item: (item[0], item[1]))
     for _, label, kind, payload, extra in items:
         if kind == 0:
-            _paint_building(draw, view, payload, extra, label, seed)
+            _paint_building(draw, view, payload, extra, label, seed, scene.styles.get(label))
         elif kind == 1:
             sprite, sprite_mask, height = scene.sprites[extra]
             x, y = _project(view, payload[0], payload[1], 0)
@@ -849,7 +1332,9 @@ def load_scene(area: Area, use_cached_trees: bool = False) -> Scene:
     surfaces = _load_surfaces(area)
     landmarks = load_landmarks()
     trees = np.load(trees_path(area)) if use_cached_trees else None
-    return build_scene(layers, _load_tree_rows(area), landmarks, surfaces, trees=trees)
+    return build_scene(
+        layers, _load_tree_rows(area), landmarks, surfaces, trees=trees, styles=load_styles()
+    )
 
 
 def save_slots(slots: np.ndarray, path: Path) -> None:

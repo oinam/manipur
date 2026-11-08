@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>About manipur.oinam.com</title>
+    <style>
+      :root { color-scheme: dark; }
+      body { margin: 0 auto; padding: 32px 16px 64px; max-width: 720px; background: #1f2a2e; color: #f0ece2; font: 16px/1.55 system-ui, sans-serif; }
+      h1 { margin: 0 0 8px; font-size: 28px; }
+      h2 { margin: 32px 0 8px; font-size: 19px; }
+      a { color: #e8dfb8; }
+      li { margin: 6px 0; }
+      .muted { color: #b8bdb9; }
+    </style>
+  </head>
+  <body>
+    <p><a href="/">Back to the map</a></p>
+    <h1>About this map</h1>
+    <p>An isometric pixel-art map of Imphal, drawn entirely by code from open map data. No photographs or satellite images appear in it.</p>
+    <p>The geography is real: roads, rivers, building footprints, and most building heights come from the sources below. Ordinary buildings are drawn from a small set of types, so tree positions, roof types, roof colors, windows, and paddy field outlines are illustrative.</p>
+
+    <h2>License</h2>
+    <p>The rendered map is released under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>. The code is MIT licensed and available on <a href="https://github.com/oinam/manipur">GitHub</a>.</p>
+
+    <h2>Map data</h2>
+    <ul>
+      <li>© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>, ODbL 1.0</li>
+      <li>Google Open Buildings, CC BY 4.0</li>
+      <li>Google Open Buildings 2.5D Temporal, CC BY 4.0. Contains modified Copernicus Sentinel data</li>
+      <li>© ESA WorldCover project 2021 / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium</li>
+    </ul>
+
+    <h2>Landmarks</h2>
+    <p class="muted">Each landmark is drawn by hand in code, using these Wikimedia Commons photographs as reference. No pixels from the photographs are used.</p>
+    <ul id="landmarks"></ul>
+
+    <script>
+      fetch("tiles/credits.json")
+        .then((response) => response.json())
+        .then((credits) => {
+          const list = document.getElementById("landmarks");
+          for (const credit of credits) {
+            const item = document.createElement("li");
+            item.append(credit.name + ": ");
+            credit.references.forEach((reference, index) => {
+              if (index) item.append("; ");
+              const link = document.createElement("a");
+              link.href = reference.url;
+              link.textContent = "photo by " + reference.author;
+              item.append(link, " (" + reference.license + ")");
+            });
+            list.append(item);
+          }
+        })
+        .catch(() => {
+          document.getElementById("landmarks").textContent = "Landmark credits could not be loaded.";
+        });
+    </script>
+  </body>
+</html>

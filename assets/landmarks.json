@@ -1,0 +1,108 @@
+[
+  {
+    "label": "Kangla Sanathong",
+    "style": "gate",
+    "replaces": [
+      "osm/way/688223556"
+    ],
+    "height_m": 16.0,
+    "note": "Footprint is OSM historic=city_gate, drawn 1.7 times scale so the form reads; arch and pavilion layout follow the photo.",
+    "references": [
+      {
+        "url": "https://commons.wikimedia.org/wiki/File:Kangla_Sanathong_(Kangla_Grand_Gate_or_Kangla_Royal_Gate)_-_Classical_Meitei_architecture_-_in_the_western_side_of_the_Kangla_Fort_(Kangla_Palace)_in_Imphal_West_district_of_Manipur_state_(Kangleipak)_01.jpg",
+        "license": "CC BY-SA 4.0",
+        "author": "Haoreima"
+      }
+    ],
+    "scale": 1.7,
+    "clearing_m": 26.0
+  },
+  {
+    "label": "Shree Govindajee Temple",
+    "style": "temple",
+    "replaces": [
+      "osm/way/665563321"
+    ],
+    "height_m": 10.0,
+    "note": "Footprint is OSM; dome positions on it are estimated.",
+    "references": [
+      {
+        "url": "https://commons.wikimedia.org/wiki/File:Shree_Govindaji_temple,_Manipur.jpg",
+        "license": "CC BY-SA 2.0",
+        "author": "kknila"
+      },
+      {
+        "url": "https://commons.wikimedia.org/wiki/File:FB7A9290.jpg",
+        "license": "CC BY-SA 4.0",
+        "author": "Bimal thongam"
+      }
+    ]
+  },
+  {
+    "label": "Ima Keithel",
+    "style": "market",
+    "replaces": [
+      "osm/way/1287757958",
+      "osm/way/1287757959",
+      "osm/way/207169435"
+    ],
+    "height_m": 9.0,
+    "note": "Footprints are OSM's Nupi Keithel 1 to 3; gable positions are estimated.",
+    "references": [
+      {
+        "url": "https://commons.wikimedia.org/wiki/File:Ema_Market.jpg",
+        "license": "CC BY-SA 3.0",
+        "author": "Herojit th"
+      }
+    ]
+  },
+  {
+    "label": "Mapal Kangjeibung",
+    "style": "stand",
+    "replaces": [
+      "ob/7MPMRW4P+97CF",
+      "ob/7MPMRW4P+Q7JP"
+    ],
+    "height_m": 4.0,
+    "note": "Open Buildings strips along the pitch, read as the seating.",
+    "references": [
+      {
+        "url": "https://commons.wikimedia.org/wiki/File:Southeastern_view_of_the_Imphal_polo_ground_(Mapal_Kangjeibung),_the_oldest_polo_field_in_the_world.jpg",
+        "license": "CC BY-SA 4.0",
+        "author": "Haoreima"
+      }
+    ]
+  },
+  {
+    "style": "pavilion",
+    "replaces": [
+      "ob/7MPMRW4P+H6XG"
+    ],
+    "height_m": 11.0,
+    "note": "Open Buildings footprint between the stands, read as the central pavilion.",
+    "references": [
+      {
+        "url": "https://commons.wikimedia.org/wiki/File:Southeastern_view_of_the_Imphal_polo_ground_(Mapal_Kangjeibung),_the_oldest_polo_field_in_the_world.jpg",
+        "license": "CC BY-SA 4.0",
+        "author": "Haoreima"
+      }
+    ],
+    "credit": "Mapal Kangjeibung"
+  },
+  {
+    "label": "Bir Tikendrajit International Airport",
+    "style": "terminal",
+    "replaces": [
+      "osm/way/336858301"
+    ],
+    "height_m": 10.0,
+    "note": "Footprint is OSM; roof modules are spaced by rule, not surveyed.",
+    "references": [
+      {
+        "url": "https://commons.wikimedia.org/wiki/File:Imphal_airport.jpg",
+        "license": "CC BY-SA 3.0",
+        "author": "Herojit th"
+      }
+    ]
+  }
+]

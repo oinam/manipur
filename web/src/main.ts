@@ -5,12 +5,23 @@ interface Place {
   kind: string;
   x: number;
   y: number;
+  tier: number;
+}
+
+interface Label {
+  place: Place;
+  element: HTMLElement;
 }
 
 const TILES = "tiles/imphal.dzi";
 const SEARCH_INDEX = "tiles/search.json";
 const MAX_RESULTS = 12;
 const FLY_TO_IMAGE_ZOOM = 1.5;
+const TIER_MIN_ZOOM: Record<number, number> = { 1: 0, 2: 0.18, 3: 0.8 };
+const LABEL_CHAR_PX = 7;
+const LABEL_HEIGHT_PX = 20;
+const TILT_FULL_ZOOM = 0.1;
+const TILT_NONE_ZOOM = 0.4;
 
 const viewer = OpenSeadragon({
   element: document.getElementById("map") as HTMLElement,
@@ -72,6 +83,10 @@ viewer.addOnceHandler("open", () => {
     goTo(start.x, start.y, start.zoom, true);
   }
   viewer.addHandler("animation-finish", writeHash);
+  viewer.addHandler("animation-finish", updateLabels);
+  viewer.addHandler("animation", updateTilt);
+  updateTilt();
+  buildLabels();
 });
 
 window.addEventListener("hashchange", () => {
@@ -80,6 +95,69 @@ window.addEventListener("hashchange", () => {
     goTo(target.x, target.y, target.zoom, false);
   }
 });
+
+const labels: Label[] = [];
+
+function buildLabels(): void {
+  if (labels.length || !places.length || !viewer.world.getItemCount()) {
+    return;
+  }
+  for (const place of places) {
+    const element = document.createElement("div");
+    element.className = `label label-${place.tier}`;
+    element.textContent = place.name;
+    element.hidden = true;
+    viewer.addOverlay({
+      element,
+      location: viewer.viewport.imageToViewportCoordinates(place.x, place.y),
+      placement: OpenSeadragon.Placement.CENTER,
+      checkResize: false,
+    });
+    labels.push({ place, element });
+  }
+  updateLabels();
+}
+
+function imageZoom(): number {
+  return viewer.viewport.viewportToImageZoom(viewer.viewport.getZoom());
+}
+
+function updateLabels(): void {
+  const zoom = imageZoom();
+  const taken: { left: number; right: number; top: number; bottom: number }[] = [];
+  const ordered = [...labels].sort((a, b) => a.place.tier - b.place.tier);
+  for (const { place, element } of ordered) {
+    let show = zoom >= TIER_MIN_ZOOM[place.tier];
+    if (show) {
+      const point = viewer.viewport.imageToViewerElementCoordinates(
+        new OpenSeadragon.Point(place.x, place.y),
+      );
+      const halfWidth = (place.name.length * LABEL_CHAR_PX) / 2;
+      const box = {
+        left: point.x - halfWidth,
+        right: point.x + halfWidth,
+        top: point.y - LABEL_HEIGHT_PX / 2,
+        bottom: point.y + LABEL_HEIGHT_PX / 2,
+      };
+      show = !taken.some(
+        (other) =>
+          box.left < other.right &&
+          box.right > other.left &&
+          box.top < other.bottom &&
+          box.bottom > other.top,
+      );
+      if (show) {
+        taken.push(box);
+      }
+    }
+    element.hidden = !show;
+  }
+}
+
+function updateTilt(): void {
+  const amount = (TILT_NONE_ZOOM - imageZoom()) / (TILT_NONE_ZOOM - TILT_FULL_ZOOM);
+  document.documentElement.style.setProperty("--tilt", String(Math.min(1, Math.max(0, amount))));
+}
 
 function bindZoom(id: string, action: () => void): void {
   (document.getElementById(id) as HTMLButtonElement).addEventListener("click", action);
@@ -97,6 +175,7 @@ fetch(SEARCH_INDEX)
   .then((response) => response.json())
   .then((entries: Place[]) => {
     places = entries;
+    buildLabels();
   })
   .catch((error: unknown) => {
     console.error("Search index failed to load", error);

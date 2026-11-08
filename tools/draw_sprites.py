@@ -1,7 +1,8 @@
-"""Draw the Shaheed Minar sprite from shapes. Palette slots are written as pixel values."""
+"""Draw landmark sprites from shapes. Palette slots are written as pixel values."""
 
 from pathlib import Path
 
+import numpy as np
 from PIL import Image, ImageDraw
 
 from manipur.detail import SLOTS_32, TRANSPARENT
@@ -19,7 +20,7 @@ def diamond(draw: ImageDraw.ImageDraw, x: int, y: int, half: int, fill: int) -> 
     draw.polygon([(x - half, y), (x, y - half // 2), (x + half, y), (x, y + half // 2)], fill=fill)
 
 
-def main() -> None:
+def draw_shaheed_minar() -> None:
     image = Image.new("L", (WIDTH, HEIGHT), TRANSPARENT)
     draw = ImageDraw.Draw(image)
     x, y = 32, 94
@@ -64,6 +65,44 @@ def main() -> None:
     target = Path("assets/sprites/shaheed_minar.png")
     image.save(target)
     print(target)
+
+
+def outlined(image: Image.Image) -> Image.Image:
+    """Return the image with a one-pixel dark edge around its opaque shape."""
+    art = np.asarray(image).copy()
+    solid = art != TRANSPARENT
+    grown = solid.copy()
+    for axis, shift in ((0, 1), (0, -1), (1, 1), (1, -1)):
+        grown |= np.roll(solid, shift, axis=axis)
+    art[grown & ~solid] = DARK
+    return Image.fromarray(art)
+
+
+def draw_kangla_sha() -> None:
+    """Draw one of the pair of white dragon-lions, facing right."""
+    image = Image.new("L", (36, 34), TRANSPARENT)
+    draw = ImageDraw.Draw(image)
+    # Legs, body, chest and neck, then the head and its two horns.
+    for x in (6, 12, 22, 27):
+        draw.rectangle([x, 21, x + 4, 30], fill=LIT)
+    draw.ellipse([3, 12, 29, 25], fill=LIT)
+    draw.polygon([(19, 13), (29, 18), (30, 6), (22, 6)], fill=LIT)
+    draw.ellipse([21, 3, 32, 12], fill=LIT)
+    draw.polygon([(29, 7), (34, 6), (33, 10), (29, 11)], fill=LIT)
+    draw.line([(23, 4), (21, 0)], fill=TOP)
+    draw.line([(27, 3), (28, 0)], fill=TOP)
+    # Shade the belly and the rear legs, and mark the mouth and neck band.
+    draw.polygon([(5, 22), (28, 22), (27, 25), (7, 25)], fill=SHADE)
+    draw.rectangle([12, 22, 16, 30], fill=SHADE)
+    draw.rectangle([27, 22, 31, 30], fill=SHADE)
+    draw.line([(30, 10), (33, 9)], fill=SHADE)
+    draw.line([(21, 13), (29, 14)], fill=TOP)
+    outlined(image).save(Path("assets/sprites/kangla_sha.png"))
+
+
+def main() -> None:
+    draw_shaheed_minar()
+    draw_kangla_sha()
 
 
 if __name__ == "__main__":

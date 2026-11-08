@@ -174,6 +174,8 @@ def surfaces(features: list[Feature]) -> gpd.GeoDataFrame:
                 tags.get("landuse") == "recreation_ground"
             ):
                 kind = "pitch"
+            elif tags.get("landuse") == "cemetery":
+                kind = "cemetery"
             else:
                 continue
             rows.append({"kind": kind})

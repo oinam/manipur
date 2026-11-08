@@ -1,11 +1,17 @@
+import json
+from pathlib import Path
+
 import geopandas as gpd
 import numpy as np
+import pytest
 import shapely
 from PIL import Image
 
 from manipur.detail import (
     FRAME_PX,
+    LANDMARKS_PATH,
     SLOTS_32,
+    STYLE_PAINTERS,
     TRANSPARENT,
     build_scene,
     detail_colors,
@@ -45,11 +51,18 @@ def test_detail_render_is_deterministic_and_grows_trees():
     assert {SLOTS_32["canopy_light"], SLOTS_32["water"], SLOTS_32["wall_lit"]} <= painted
 
 
-def test_landmark_sprite_uses_only_palette_slots_and_transparency():
-    art = np.asarray(Image.open("assets/sprites/shaheed_minar.png"))
-    values = set(np.unique(art).tolist())
+@pytest.mark.parametrize("path", sorted(Path("assets/sprites").glob("*.png")))
+def test_landmark_sprites_use_only_palette_slots_and_transparency(path):
+    values = set(np.unique(np.asarray(Image.open(path))).tolist())
     assert TRANSPARENT in values
     assert values - {TRANSPARENT} <= set(SLOTS_32.values())
+
+
+def test_every_landmark_style_has_a_painter_and_a_reference():
+    for entry in json.loads(LANDMARKS_PATH.read_text()):
+        assert entry["style"] in STYLE_PAINTERS
+        assert entry["replaces"]
+        assert entry["references"]
 
 
 def test_adjacent_frames_join_without_a_seam():

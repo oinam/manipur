@@ -24,6 +24,8 @@ class Area:
 
 AREAS = {
     "kangla": Area("kangla", 24.800, 93.935, 24.815, 93.952),
+    # Wide enough that the 900 px detail crop never runs off the data.
+    "kangla-sw": Area("kangla-sw", 24.796, 93.931, 24.811, 93.945),
 }
 
 

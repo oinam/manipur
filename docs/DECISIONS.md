@@ -55,3 +55,19 @@ left out until Phase 3 because the patch is on the flat valley floor.
 
 Brajeshwar chose projection B (2:1 dimetric, 45° rotation), 0.5 m/px, and the
 `monsoon` palette from the swatch sheet. The renderer uses these by default.
+
+## 2026-11-08 — Detail crop as the quality test
+
+`manipur detail` styles one 900 px crop to near-final quality, to judge what the
+procedural map can become; `render` is unchanged. The `kangla-sw` area is wider
+than `kangla` so the crop never runs off the data.
+
+The monsoon palette gains 11 shades derived from its own colors (roof shades,
+canopy, water, shadow), for 32 slots in all. Ground stays WorldCover, smoothed by
+a box-blur vote, because OSM land use is thin here. Tree positions are procedural:
+WorldCover class sets the odds, and OSM `tree_row` lines are followed. Roof type
+and color come from a seeded hash, so they are plausible rather than real.
+
+The Shaheed Minar sprite is drawn from shapes in code; no photo pixels are read.
+Its position is hand-placed at the center of OSM's park polygon, because no
+surveyed coordinate exists, and needs checking by someone who knows the park.

@@ -1,0 +1,25 @@
+{
+  "name": "Shaheed Minar (Martyrs' Memorial Pillar), Bir Tikendrajit Park, Imphal",
+  "drawn_by": "tools/draw_shaheed_minar.py, from shapes in code; no photo pixels are read",
+  "drawn_on": "2026-11-08",
+  "anchor_px": [32, 94],
+  "placed_at": {
+    "lon": 93.93693,
+    "lat": 24.80637,
+    "method": "hand-placed at the centroid of the OSM polygon for Bir Tikendrajit Park; no surveyed coordinate was found",
+    "confidence": "approximate"
+  },
+  "scale_note": "Height is not surveyed; drawn slightly larger than scale so the form reads.",
+  "references": [
+    {
+      "url": "https://commons.wikimedia.org/wiki/File:The_Martyrs%27_Memorial_Pillar_(Shaheed_Minar)_of_the_Bir_Tikendrajit_Park_in_Imphal,_Manipur,_India_(Front_View).jpg",
+      "license": "CC BY-SA 4.0",
+      "author": "Haoreima"
+    },
+    {
+      "url": "https://commons.wikimedia.org/wiki/File:The_Martyrs%27_Memorial_Pillar_(Shaheed_Minar)_of_the_Bir_Tikendrajit_Park_in_Imphal,_Manipur,_India_(Side_View).jpg",
+      "license": "CC BY-SA 4.0",
+      "author": "Haoreima"
+    }
+  ]
+}

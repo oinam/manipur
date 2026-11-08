@@ -36,12 +36,19 @@ def run_swatches(area: Area) -> None:
     swatches(area)
 
 
+def run_detail(area: Area) -> None:
+    from manipur.detail import detail
+
+    detail(area)
+
+
 STAGES: dict[str, Callable[[Area], None]] = {
     "fetch": run_fetch,
     "plan": run_plan,
     "prepare": run_prepare,
     "render": run_render,
     "swatches": run_swatches,
+    "detail": run_detail,
 }
 
 

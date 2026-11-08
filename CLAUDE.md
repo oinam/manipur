@@ -53,6 +53,8 @@ uv run manipur plan   --area kangla      # writes a top-down check to out/<area>
 uv run manipur prepare --area kangla     # writes data/derived/<area>.gpkg and stats
 uv run manipur render --area kangla      # writes frame and full renders to out/<area>/
 uv run manipur swatches --area kangla    # writes the candidate palette sheet to out/<area>/
+uv run manipur detail --area kangla-sw   # writes the near-final 900 px crop to out/<area>/
+uv run python tools/draw_shaheed_minar.py # redraws the landmark sprite in assets/sprites/
 uv run pytest                            # runs the tests
 uv run ruff check .                      # lints
 ```

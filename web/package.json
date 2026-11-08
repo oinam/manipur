@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build"
+    "build": "tsc --noEmit && vite build && ln -sfn ../../out/imphal/tiles dist/tiles",
+    "site": "rsync -aL --delete --exclude vips-properties.xml dist/ ../out/imphal/site/",
+    "deploy": "pnpm run build && pnpm run site && wrangler deploy"
   },
   "dependencies": {
     "openseadragon": "5.0.1"
@@ -12,6 +14,7 @@
   "devDependencies": {
     "@types/openseadragon": "5.0.1",
     "typescript": "5.9.3",
-    "vite": "7.1.12"
+    "vite": "7.1.12",
+    "wrangler": "^4.158.0"
   }
 }

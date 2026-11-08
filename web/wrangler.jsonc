@@ -1,0 +1,6 @@
+{
+  "name": "manipur",
+  "compatibility_date": "2026-11-01",
+  "assets": { "directory": "../out/imphal/site" },
+  "routes": [{ "pattern": "manipur.oinam.com", "custom_domain": true }]
+}

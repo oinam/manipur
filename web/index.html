@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Imphal, Isometric</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="map" aria-label="Zoomable isometric map of Imphal"></div>
+
+    <div class="panel search">
+      <input id="search" type="search" placeholder="Search a place in Imphal" autocomplete="off" aria-label="Search places" />
+      <ul id="results" hidden></ul>
+    </div>
+
+    <div class="panel controls">
+      <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
+      <button id="zoom-out" type="button" aria-label="Zoom out">−</button>
+      <button id="home" type="button" aria-label="Show all of Imphal">⌂</button>
+    </div>
+
+    <footer class="panel credits">
+      <details>
+        <summary>Map data and credits</summary>
+        <p>Rendered map <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>. Drawn by code from open data; no photographs are used. Tree positions, roof types, and windows are illustrative.</p>
+        <ul>
+          <li>© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></li>
+          <li>Google Open Buildings, CC BY 4.0</li>
+          <li>Google Open Buildings 2.5D Temporal, CC BY 4.0. Contains modified Copernicus Sentinel data</li>
+          <li>© ESA WorldCover project 2021 / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium</li>
+          <li>Shaheed Minar sprite drawn with reference to photographs by Haoreima, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>, via Wikimedia Commons</li>
+        </ul>
+      </details>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

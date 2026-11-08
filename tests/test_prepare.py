@@ -2,7 +2,7 @@ import geopandas as gpd
 import numpy as np
 import shapely
 
-from manipur.prepare import assign_heights, duplicate_mask, on_water_mask
+from manipur.prepare import assign_heights, duplicate_mask, mostly_on_mask
 
 
 def frame(*polygons):
@@ -21,10 +21,10 @@ def test_duplicate_mask_separates_touching_from_duplicate():
     assert duplicate.tolist() == [True, False, False]
 
 
-def test_on_water_mask_flags_mostly_wet_polygons():
+def test_mostly_on_mask_flags_mostly_covered_polygons():
     water = shapely.box(0, 0, 10, 10)
     candidates = frame(shapely.box(1, 1, 5, 5), shapely.box(8, 0, 18, 10))
-    assert on_water_mask(candidates, water).tolist() == [True, False]
+    assert mostly_on_mask(candidates, water).tolist() == [True, False]
 
 
 def test_assign_heights_prefers_tag_then_raster_then_default():

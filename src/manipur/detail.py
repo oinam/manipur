@@ -524,8 +524,8 @@ def _paint_flat(draw, view, polygon, height, slot, shade, kind, building_id, see
     if polygon.area >= 40 and _hash(seed, building_id + "t", 3) == 0:
         center = polygon.representative_point()
         x, y = _project(view, center.x, center.y, height)
-        draw.rectangle([x - 2, y - 6, x + 2, y], fill=SLOTS_32["background"])
-        draw.line([(x - 2, y - 6), (x + 2, y - 6)], fill=SLOTS_32["road_major"])
+        draw.rectangle([x - 1, y - 4, x + 1, y], fill=SLOTS_32["background"])
+        draw.line([(x - 1, y - 4), (x + 1, y - 4)], fill=SLOTS_32["road_major"])
 
 
 def _paint_building(draw, view, polygon, height, building_id, seed) -> None:

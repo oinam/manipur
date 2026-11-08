@@ -48,6 +48,12 @@ def run_frames(area: Area) -> None:
     frames(area)
 
 
+def run_tile(area: Area) -> None:
+    from manipur.tile import tile
+
+    tile(area)
+
+
 STAGES: dict[str, Callable[[Area], None]] = {
     "fetch": run_fetch,
     "plan": run_plan,
@@ -56,6 +62,7 @@ STAGES: dict[str, Callable[[Area], None]] = {
     "swatches": run_swatches,
     "detail": run_detail,
     "frames": run_frames,
+    "tile": run_tile,
 }
 
 

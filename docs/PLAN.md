@@ -6,6 +6,13 @@
 the detail crop. Phase 1 is in progress on `phase-1-imphal`. The notes below are
 the Phase 0 record.*
 
+**Phase 1, 2026-11-08.** Imphal renders end to end and runs locally: 262,527 buildings,
+162 frames in about 150 seconds, a 161 MB pyramid, a viewer with search and
+shareable URLs. Hosting waits on the site name and domain. The Phase 1 exit (a link
+a Manipuri friend recognizes) is still open.
+
+**Phase 0 record:**
+
 - **Chosen:** projection B, 0.5 m/px, `monsoon` palette.
 - **Footprints:** 57 OSM and 8,170 Open Buildings polygons, 127 (1.6%) of them
   overlapping an OSM building. 7,034 remain after dropping 1,106 below 0.70

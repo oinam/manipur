@@ -1,0 +1,145 @@
+:root {
+  --bg: #1f2a2e;
+  --panel: rgba(31, 42, 46, 0.92);
+  --ink: #f0ece2;
+  --muted: #b8bdb9;
+  --accent: #c9744a;
+  --line: rgba(240, 236, 226, 0.18);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.45 system-ui, sans-serif;
+}
+
+#map {
+  position: fixed;
+  inset: 0;
+}
+
+.panel {
+  position: fixed;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.search {
+  top: 16px;
+  left: 16px;
+  width: min(340px, calc(100vw - 32px));
+}
+
+#search {
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+#search:focus-visible,
+button:focus-visible,
+.credits summary:focus-visible,
+#results button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+#results {
+  max-height: min(50vh, 340px);
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+
+#results button {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+#results button:hover {
+  background: var(--line);
+}
+
+#results small {
+  color: var(--muted);
+}
+
+.controls {
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.controls button {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 19px;
+  cursor: pointer;
+}
+
+.controls button + button {
+  border-top: 1px solid var(--line);
+}
+
+.credits {
+  right: 16px;
+  bottom: 16px;
+  left: auto;
+  max-width: min(520px, calc(100vw - 32px));
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.credits summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.credits p,
+.credits ul {
+  margin: 8px 0;
+}
+
+.credits ul {
+  padding-left: 18px;
+}
+
+.credits a {
+  color: var(--ink);
+}
+
+.marker {
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  background: rgba(201, 116, 74, 0.28);
+  pointer-events: none;
+}

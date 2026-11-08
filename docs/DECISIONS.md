@@ -81,3 +81,18 @@ canvas is about 645 megapixels and is rendered as a grid of frames. OSM comes fr
 Geofabrik's `north-eastern-zone` extract, read with pyosmium (110 MB, against 1.7 GB
 for all of India, on a nearly full disk). Heights are resampled to 2 m for this
 area; the raster's effective resolution is about 4 m.
+
+## 2026-11-08 — Phase 1 rendering and tiles
+
+Frames are 2048 px on one integer canvas, each rendered with a 256 px apron and
+cropped, so neighbors join without a differing pixel; a test holds that true.
+Trees and paddy are anchored to world coordinates. OSM maps no paddy or farmland
+here, so WorldCover cropland gets a procedural field lattice.
+
+Open Buildings polygons at least 50% on a road 8 m or wider are dropped: they are
+flyovers and footbridges read as roofs. Tiles are lossless WebP, which measured
+smaller than lossy for this flat-color art (41 KB per tile against 65 KB at q60)
+and stays pixel-exact, so this differs from the reference sites' q60.
+
+Search uses OSM `name` only. The site's name, its domain, and label scripts are
+still open in `PLAN.md`; the viewer's title is a placeholder.

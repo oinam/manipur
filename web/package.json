@@ -1,0 +1,17 @@
+{
+  "name": "manipur-viewer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build"
+  },
+  "dependencies": {
+    "openseadragon": "5.0.1"
+  },
+  "devDependencies": {
+    "@types/openseadragon": "5.0.1",
+    "typescript": "5.9.3",
+    "vite": "7.1.12"
+  }
+}

@@ -4,11 +4,13 @@ import shapely
 from PIL import Image
 
 from manipur.detail import (
+    FRAME_PX,
     SLOTS_32,
     TRANSPARENT,
     build_scene,
     detail_colors,
     render_detail,
+    render_frame,
 )
 from manipur.render import PROJECTION_B, Layers, centered_viewport
 
@@ -48,3 +50,11 @@ def test_landmark_sprite_uses_only_palette_slots_and_transparency():
     values = set(np.unique(art).tolist())
     assert TRANSPARENT in values
     assert values - {TRANSPARENT} <= set(SLOTS_32.values())
+
+
+def test_adjacent_frames_join_without_a_seam():
+    scene = build_scene(sample_layers())
+    width = 2 * FRAME_PX
+    canvas = centered_viewport(PROJECTION_B, 150, 150, width, FRAME_PX)
+    joined = np.hstack([render_frame(scene, canvas, 0, 0), render_frame(scene, canvas, 1, 0)])
+    assert np.array_equal(joined, render_detail(scene, canvas))

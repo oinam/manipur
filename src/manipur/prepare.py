@@ -22,6 +22,7 @@ MIN_CONFIDENCE = 0.70
 DEDUPE_IOU = 0.30
 DEDUPE_COVERED = 0.50
 WATER_COVERED = 0.50
+MAJOR_ROAD_M = 8.0
 MIN_HEIGHT_M = 2.5
 MAX_HEIGHT_M = 80.0
 HEIGHT_PERCENTILE = 75
@@ -225,10 +226,10 @@ def duplicate_mask(
     return intersects, duplicate
 
 
-def on_water_mask(open_buildings: gpd.GeoDataFrame, water: shapely.Geometry) -> np.ndarray:
-    """Flag polygons mostly on mapped water; anything drawn on water is a bug."""
+def mostly_on_mask(open_buildings: gpd.GeoDataFrame, area: shapely.Geometry) -> np.ndarray:
+    """Flag polygons mostly on an area where no building can stand, such as water."""
     geometries = open_buildings.geometry.values
-    covered = shapely.area(shapely.intersection(geometries, water)) / shapely.area(geometries)
+    covered = shapely.area(shapely.intersection(geometries, area)) / shapely.area(geometries)
     return covered >= WATER_COVERED
 
 
@@ -314,8 +315,13 @@ def prepare(area: Area) -> None:
 
     kept = candidates[confident].reset_index(drop=True)
     _, duplicate = duplicate_mask(kept, osm)
-    on_water = on_water_mask(kept, wet)
-    survivors = kept[~duplicate & ~on_water].copy()
+    on_water = mostly_on_mask(kept, wet)
+    # Flyovers and footbridges over major roads get detected as long, thin roofs.
+    road_lines = roads(features)
+    major = road_lines[road_lines.width_m >= MAJOR_ROAD_M]
+    carriageway = shapely.union_all(major.geometry.buffer(major.width_m / 2).values)
+    on_road = mostly_on_mask(kept, carriageway)
+    survivors = kept[~duplicate & ~on_water & ~on_road].copy()
     survivors["building_id"] = "ob/" + survivors["full_plus_code"].astype(str)
     survivors["source"] = "open_buildings"
     survivors["name"] = None
@@ -360,6 +366,7 @@ def prepare(area: Area) -> None:
         "open_buildings_below_confidence": int((~confident).sum()),
         "open_buildings_duplicates_dropped": int(duplicate.sum()),
         "open_buildings_on_water_dropped": int((on_water & ~duplicate).sum()),
+        "open_buildings_on_major_roads_dropped": int((on_road & ~on_water & ~duplicate).sum()),
         "open_buildings_kept": len(survivors),
         "open_buildings_under_10m2": int((areas < 10).sum()),
         "open_buildings_largest_m2": [round(float(value), 1) for value in largest],

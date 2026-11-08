@@ -1,0 +1,41 @@
+[project]
+name = "manipur"
+version = "0.1.0"
+description = "An isometric pixel-art map of Manipur, rendered procedurally from open data."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "geopandas>=1.0",
+    "numpy>=2.0",
+    "pillow>=11.0",
+    "pyogrio>=0.10",
+    "pyproj>=3.7",
+    "rasterio>=1.4",
+    "requests>=2.32",
+    "s2sphere>=0.2.5",
+    "shapely>=2.0",
+]
+
+[project.scripts]
+manipur = "manipur.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8.0", "ruff>=0.8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/manipur"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

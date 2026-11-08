@@ -46,11 +46,12 @@ decision says so. No GPU required for Phases 0 to 3.
 
 ## Commands
 
-Not yet created. Phase 0 should produce, at minimum:
-
 ```
+uv sync                                  # installs the pinned Python 3.12 environment
 uv run manipur fetch  --area kangla      # downloads into data/raw/<area>/
-uv run manipur render --area kangla      # writes out/<area>/<timestamp>.png
+uv run manipur plan   --area kangla      # writes a top-down check to out/<area>/
+uv run pytest                            # runs the tests
+uv run ruff check .                      # lints
 ```
 
 Add `make`/`just` targets as they appear and keep this list current.

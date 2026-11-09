@@ -1,6 +1,7 @@
 """Stage 3: paint ground, water, roads, and extruded buildings into palette slots."""
 
 import datetime as dt
+import itertools
 import math
 import time
 import zlib
@@ -212,7 +213,7 @@ def _paint_building(
     cos, sin = math.cos(angle), math.sin(angle)
     ring = np.array(orient(polygon, 1.0).exterior.coords)
     walls = []
-    for start, end in zip(ring[:-1], ring[1:], strict=True):
+    for start, end in itertools.pairwise(ring):
         dx, dy = end - start
         # Outward normal of a counterclockwise ring, in the rotated ground frame.
         normal_x = cos * dy - sin * dx

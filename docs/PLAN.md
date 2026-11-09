@@ -11,14 +11,14 @@ the Phase 0 record.*
 shareable URLs. Live at https://manipur.oinam.com. The Phase 1 exit (a link a Manipuri friend
 recognizes) is still open.
 
-**Phase 2, 2026-11-09.** In progress on `phase-2-landmarks`. Thirteen landmarks
-are live: Shaheed Minar, Kangla Sanathong, Kangla Sha,
-Shree Govindajee Temple, Ima Keithel, Mapal Kangjeibung, the airport terminal, and
-the two war cemeteries, plus Ibudhou Pakhangba Temple, Uttra Shanglen, Kangla Museum,
-the Kangla citadel walls, and the Manipur Legislative Assembly. St. Joseph's Cathedral
-is drawn locally. Commons has no further photos of identifiable Imphal buildings, so
-more landmarks need contributed photos. Labels, tilt-shift, and a credits page work. RIMS and Manipur University
-have no usable Commons photo yet, so they have labels only.
+**Phase 2, 2026-11-09.** In progress on `phase-2-landmarks`. Thirteen landmarks are
+live: Shaheed Minar, Kangla Sanathong, Kangla Sha, Shree Govindajee Temple, Ima
+Keithel, Mapal Kangjeibung, the airport terminal, the two war cemeteries, Ibudhou
+Pakhangba Temple, Uttra Shanglen, Kangla Museum, the Kangla citadel walls, and the
+Manipur Legislative Assembly. St. Joseph's Cathedral is drawn locally. Labels,
+tilt-shift, and a credits page work. Commons has no further photos of identifiable
+Imphal buildings, so more landmarks, including RIMS and Manipur University, need
+contributed photos.
 
 **Phase 0 record:**
 

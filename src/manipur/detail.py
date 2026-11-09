@@ -1,6 +1,7 @@
 """Near-final styling for one crop, to judge what the procedural map can become."""
 
 import datetime as dt
+import itertools
 import json
 import math
 import multiprocessing
@@ -519,7 +520,7 @@ def _paint_pitched(draw, view, polygon, height, slot, shade, windows, ribbed) ->
         ring = ring[::-1]
     closed = np.array(ring)
     # Short edges carry the gables; in the reversed ring they stay at odd positions.
-    gables = {index: ridge for index in (1, 3)}
+    gables = dict.fromkeys((1, 3), ridge)
     _paint_walls(draw, view, closed, eave, gables, False, windows)
 
     outline = SLOTS_32["background"]
@@ -808,10 +809,11 @@ def _paint_stand(draw, view, polygon, height) -> None:
 def _paint_pavilion(draw, view, polygon, height) -> None:
     center, u, v, length, width = _ground_axes(polygon)
     _paint_stand(draw, view, polygon, 3.0)
-    posts = []
-    for along in np.linspace(-length / 2 + 1.5, length / 2 - 1.5, 7):
-        for side in (-width / 2 + 1.5, width / 2 - 1.5):
-            posts.append(center + u * along + v * side)
+    posts = [
+        center + u * along + v * side
+        for along in np.linspace(-length / 2 + 1.5, length / 2 - 1.5, 7)
+        for side in (-width / 2 + 1.5, width / 2 - 1.5)
+    ]
     for post in sorted(posts, key=lambda point: -_depth(*point)):
         draw.line(
             [_project(view, *post, 3.0), _project(view, *post, height)], fill=SLOTS_32["wall_lit"]
@@ -969,7 +971,7 @@ def _box(draw, view, center, u, v, half_u, half_v, base, top, lit, shade, cap) -
     """Draw a raised block: its camera-facing sides, then its top."""
     outline = SLOTS_32["background"]
     ring = _rect_ring(center, u, v, half_u, half_v)
-    for p, q in zip(ring[:-1], ring[1:], strict=True):
+    for p, q in itertools.pairwise(ring):
         normal_u, normal_depth = _normal(p, q)
         if normal_depth < 0:
             draw.polygon(
@@ -1482,13 +1484,10 @@ def _select(frame: gpd.GeoDataFrame, index: shapely.STRtree, quad) -> gpd.GeoDat
     return frame.iloc[np.unique(index.query(quad, predicate="intersects"))]
 
 
-def render_detail(scene: Scene, view: Viewport) -> np.ndarray:
-    """Return a uint8 array of 32 palette slots."""
-    quad = _view_quad(view)
+def _local_layers(scene: Scene, quad: shapely.Polygon) -> Layers:
+    """Return only the features a view can see."""
     layers = scene.layers
-    if not quad.intersects(layers.patch):
-        return np.full((view.height, view.width), SLOTS_32["background"], dtype="uint8")
-    local = Layers(
+    return Layers(
         layers.patch,
         _select(layers.ground, scene.indexes["ground"], quad),
         _select(layers.water, scene.indexes["water"], quad),
@@ -1496,46 +1495,42 @@ def render_detail(scene: Scene, view: Viewport) -> np.ndarray:
         _select(layers.roads, scene.indexes["roads"], quad),
         _select(layers.buildings, scene.indexes["buildings"], quad),
     )
-    surfaces = _select(scene.surfaces, scene.indexes["surfaces"], quad)
-    seed = scene.seed
 
+
+def _screen(view: Viewport, x, y):
     a, b, d, e = PROJECTION.matrix
+    return a * x + b * y + view.x_offset, d * x + e * y + view.y_offset
 
-    def screen(x, y):
-        return a * x + b * y + view.x_offset, d * x + e * y + view.y_offset
 
+def _visible_landmarks(scene: Scene, view: Viewport) -> list[dict]:
     landmarks = []
     for landmark in scene.landmarks:
-        sx, sy = screen(landmark["x"], landmark["y"])
+        sx, sy = _screen(view, landmark["x"], landmark["y"])
         if -200 < sx < view.width + 200 and -200 < sy < view.height + 200:
             landmarks.append(landmark)
+    return landmarks
 
-    canvas = _paint_ground(local, view)
-    _paint_surfaces(canvas, surfaces, view)
-    for landmark in landmarks:
-        clearing = Point(landmark["x"], landmark["y"]).buffer(landmark["clearing"] * 0.6)
-        canvas[_burn([(clearing, 1)], view).astype(bool)] = SLOTS_32["bare"]
-    _paint_water(canvas, local, view)
-    _paint_roads(canvas, local, view)
 
-    items = []
-    shadows = []
+def _add_buildings(items: list, shadows: list, scene: Scene, local: Layers) -> None:
     for row in local.buildings.itertuples():
         parts = row.geometry.geoms if row.geometry.geom_type == "MultiPolygon" else [row.geometry]
         style = scene.styles.get(row.building_id)
         height = style.get("height_m", row.height_m) if style else row.height_m
-        for polygon in parts:
+        for part in parts:
+            polygon = part
             if style and "scale" in style:
                 factor = style["scale"]
-                polygon = shapely.affinity.scale(polygon, factor, factor, origin="centroid")
+                polygon = shapely.affinity.scale(part, factor, factor, origin="centroid")
             dx, dy = _sun_offset(height * SHADOW_PER_HEIGHT)
             moved = shapely.affinity.translate(polygon, dx, dy)
             shadows.append((shapely.convex_hull(shapely.union(polygon, moved)), 1))
             center = polygon.centroid
             items.append((-_depth(center.x, center.y), row.building_id, 0, polygon, height))
 
+
+def _add_trees(items: list, shadows: list, scene: Scene, view: Viewport) -> None:
     trees = scene.trees
-    screen_x, screen_y = screen(trees[:, 0], trees[:, 1])
+    screen_x, screen_y = _screen(view, trees[:, 0], trees[:, 1])
     nearby = (
         (screen_x > -40)
         & (screen_x < view.width + 40)
@@ -1548,6 +1543,9 @@ def render_detail(scene: Scene, view: Viewport) -> np.ndarray:
         dx, dy = _sun_offset(radius_m * 0.9)
         shadows.append((Point(x + dx, y + dy).buffer(radius_m * 0.9, quad_segs=4), 1))
         items.append((-_depth(x, y), f"tree/{x:.2f}/{y:.2f}", 1, (x, y), index))
+
+
+def _add_landmarks(items: list, shadows: list, landmarks: list[dict]) -> None:
     for landmark in landmarks:
         dx, dy = _sun_offset(12.0)
         foot = Point(landmark["x"], landmark["y"]).buffer(4.5)
@@ -1555,6 +1553,8 @@ def render_detail(scene: Scene, view: Viewport) -> np.ndarray:
         shadows.append((shadow, 1))
         items.append((-_depth(landmark["x"], landmark["y"]), "landmark", 2, landmark, 0))
 
+
+def _darken_shadows(canvas: np.ndarray, shadows: list, view: Viewport) -> None:
     mask = _burn(shadows, view).astype(bool)
     remap = np.arange(256, dtype="uint8")
     for name, darker in SHADOW.items():
@@ -1562,12 +1562,14 @@ def render_detail(scene: Scene, view: Viewport) -> np.ndarray:
     inside = mask & (canvas != SLOTS_32["background"])
     canvas[inside] = remap[canvas[inside]]
 
-    image = Image.fromarray(canvas)
+
+def _paint_items(image: Image.Image, items: list, scene: Scene, view: Viewport) -> None:
+    """Draw buildings, trees, and sprites from the back of the scene to the front."""
     draw = ImageDraw.Draw(image)
     items.sort(key=lambda item: (item[0], item[1]))
     for _, label, kind, payload, extra in items:
         if kind == 0:
-            _paint_building(draw, view, payload, extra, label, seed, scene.styles.get(label))
+            _paint_building(draw, view, payload, extra, label, scene.seed, scene.styles.get(label))
         elif kind == 1:
             sprite, sprite_mask, height = scene.sprites[extra]
             x, y = _project(view, payload[0], payload[1], 0)
@@ -1579,6 +1581,34 @@ def render_detail(scene: Scene, view: Viewport) -> np.ndarray:
             top = y - payload["anchor"][1]
             paste_mask = Image.fromarray(((art != TRANSPARENT).astype("uint8")) * 255)
             image.paste(Image.fromarray(art), (left, top), paste_mask)
+
+
+def render_detail(scene: Scene, view: Viewport) -> np.ndarray:
+    """Return a uint8 array of 32 palette slots."""
+    quad = _view_quad(view)
+    if not quad.intersects(scene.layers.patch):
+        return np.full((view.height, view.width), SLOTS_32["background"], dtype="uint8")
+    local = _local_layers(scene, quad)
+    surfaces = _select(scene.surfaces, scene.indexes["surfaces"], quad)
+    landmarks = _visible_landmarks(scene, view)
+
+    canvas = _paint_ground(local, view)
+    _paint_surfaces(canvas, surfaces, view)
+    for landmark in landmarks:
+        clearing = Point(landmark["x"], landmark["y"]).buffer(landmark["clearing"] * 0.6)
+        canvas[_burn([(clearing, 1)], view).astype(bool)] = SLOTS_32["bare"]
+    _paint_water(canvas, local, view)
+    _paint_roads(canvas, local, view)
+
+    items: list = []
+    shadows: list = []
+    _add_buildings(items, shadows, scene, local)
+    _add_trees(items, shadows, scene, view)
+    _add_landmarks(items, shadows, landmarks)
+    _darken_shadows(canvas, shadows, view)
+
+    image = Image.fromarray(canvas)
+    _paint_items(image, items, scene, view)
     return np.asarray(image, dtype="uint8").copy()
 
 

@@ -120,11 +120,11 @@ def landmark_credits() -> list[dict]:
     sources = [json.loads(path.read_text()) for path in sorted(SPRITE_DIR.glob("*.json"))]
     sources += json.loads(LANDMARKS_PATH.read_text())
     sources.append(json.loads(CEMETERY_CREDIT.read_text()))
-    credits = {}
+    entries = {}
     for source in sources:
         name = source.get("credit") or source.get("label") or source["name"]
-        credits.setdefault(name, {"name": name, "references": source["references"]})
-    return sorted(credits.values(), key=lambda credit: credit["name"])
+        entries.setdefault(name, {"name": name, "references": source["references"]})
+    return sorted(entries.values(), key=lambda credit: credit["name"])
 
 
 def tile(area: Area) -> None:

@@ -60,7 +60,9 @@ uv run manipur tile   --area imphal      # builds the Deep Zoom pyramid and sear
 pnpm --dir web install && pnpm --dir web build   # builds the viewer into web/dist
 pnpm --dir web run deploy                        # publishes to manipur.oinam.com
 uv run pytest                            # runs the tests
-uv run ruff check .                      # lints
+uv run ruff check . && uv run ruff format --check .   # lints and checks Python formatting
+pnpm --dir web run lint                  # type-checks, lints, and checks viewer formatting
+pnpm --dir web run format                # formats the viewer
 ```
 
 Add `make`/`just` targets as they appear and keep this list current.

@@ -39,7 +39,33 @@ line-length = 100
 src = ["src", "tests"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B"]
+select = [
+    "A",
+    "B",
+    "C4",
+    "E",
+    "F",
+    "I",
+    "ISC",
+    "N",
+    "PERF",
+    "PIE",
+    "PL",
+    "PT",
+    "PTH",
+    "RET",
+    "RUF",
+    "SIM",
+    "TID",
+    "UP",
+    "W",
+]
+# Geometry and drawing code has many literal measures and many-argument helpers,
+# and the CLI imports each stage lazily so a stage only loads what it needs.
+ignore = ["PLR0913", "PLR0917", "PLR2004"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/manipur/cli.py" = ["PLC0415"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

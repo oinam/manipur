@@ -52,6 +52,14 @@ function saveMotion(enabled: boolean): void {
   }
 }
 
+function context2d(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Canvas 2D is unavailable");
+  }
+  return context;
+}
+
 function cellHash(x: number, y: number): number {
   let hash = Math.imul(x, 374761393) ^ Math.imul(y, 668265263);
   hash = Math.imul(hash ^ (hash >>> 13), 1274126177);
@@ -62,9 +70,12 @@ function toSegments(lines: FlowLine[]): Segment[] {
   const segments: Segment[] = [];
   for (const line of lines) {
     let start = 0;
-    for (let index = 1; index < line.points.length; index++) {
-      const [x0, y0] = line.points[index - 1];
-      const [x1, y1] = line.points[index];
+    for (const [index, [x1, y1]] of line.points.entries()) {
+      const previous = line.points[index - 1];
+      if (!previous) {
+        continue;
+      }
+      const [x0, y0] = previous;
       const length = Math.hypot(x1 - x0, y1 - y0);
       if (length > 0) {
         segments.push({
@@ -90,9 +101,9 @@ export function startWater(viewer: OpenSeadragon.Viewer, toggle: HTMLButtonEleme
   const canvas = document.createElement("canvas");
   canvas.className = "water";
   source.after(canvas);
-  const context = canvas.getContext("2d") as CanvasRenderingContext2D;
+  const context = context2d(canvas);
   const mask = document.createElement("canvas");
-  const sourceContext = source.getContext("2d") as CanvasRenderingContext2D;
+  const sourceContext = context2d(source);
 
   let segments: Segment[] = [];
   let ready = false;
@@ -126,14 +137,15 @@ export function startWater(viewer: OpenSeadragon.Viewer, toggle: HTMLButtonEleme
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const offset = (y * step * source.width + x * step) * 4;
-        water[y * width + x] = pixels[offset + 2] - pixels[offset] >= MIN_WATER_BLUE_OVER_RED ? 1 : 0;
+        water[y * width + x] =
+          (pixels[offset + 2] ?? 0) - (pixels[offset] ?? 0) >= MIN_WATER_BLUE_OVER_RED ? 1 : 0;
       }
     }
     // Windows are water-colored too; only open water survives this inset.
     const inset = Math.ceil(SHORE_MAP_PX * zoom);
     mask.width = width;
     mask.height = height;
-    const maskContext = mask.getContext("2d") as CanvasRenderingContext2D;
+    const maskContext = context2d(mask);
     const output = maskContext.createImageData(width, height);
     for (let y = inset; y < height - inset; y++) {
       for (let x = inset; x < width - inset; x++) {
@@ -212,7 +224,11 @@ export function startWater(viewer: OpenSeadragon.Viewer, toggle: HTMLButtonEleme
       FLOW_LANES.forEach((lane, laneIndex) => {
         const shift = (seconds * FLOW_SPEED + laneIndex * 7) % FLOW_SPACING;
         const first = Math.ceil((segment.start - shift) / FLOW_SPACING);
-        for (let dash = first; dash * FLOW_SPACING + shift < segment.start + segment.length; dash++) {
+        for (
+          let dash = first;
+          dash * FLOW_SPACING + shift < segment.start + segment.length;
+          dash++
+        ) {
           const along = (dash * FLOW_SPACING + shift - segment.start) / segment.length;
           const offset = lane * segment.width;
           const x = Math.round(

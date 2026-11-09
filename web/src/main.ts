@@ -27,8 +27,16 @@ const SITE_URL = "https://manipur.oinam.com/";
 const NEW_ISSUE_URL = "https://github.com/oinam/manipur/issues/new";
 const NEAR_PLACE_MAX_PX = 800;
 
+function byId<T extends HTMLElement>(id: string, type: new () => T): T {
+  const element = document.getElementById(id);
+  if (!(element instanceof type)) {
+    throw new Error(`Missing element #${id}`);
+  }
+  return element;
+}
+
 const viewer = OpenSeadragon({
-  element: document.getElementById("map") as HTMLElement,
+  element: byId("map", HTMLElement),
   prefixUrl: "",
   drawer: "canvas",
   showNavigationControl: false,
@@ -47,10 +55,11 @@ function imageZoomToViewport(zoom: number): number {
 
 function readHash(): { x: number; y: number; zoom: number } | null {
   const parts = location.hash.slice(1).split("/").map(Number);
-  if (parts.length !== 3 || parts.some((part) => !Number.isFinite(part))) {
+  const [zoom = NaN, x = NaN, y = NaN] = parts;
+  if (parts.length !== 3 || ![zoom, x, y].every(Number.isFinite)) {
     return null;
   }
-  return { zoom: parts[0], x: parts[1], y: parts[2] };
+  return { zoom, x, y };
 }
 
 function goTo(x: number, y: number, imageZoom: number, immediately: boolean): void {
@@ -104,7 +113,7 @@ function updateCorrectionLink(): void {
   correctionLink.href = `${NEW_ISSUE_URL}?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
 }
 
-const correctionLink = document.getElementById("correction") as HTMLAnchorElement;
+const correctionLink = byId("correction", HTMLAnchorElement);
 let marker: HTMLElement | null = null;
 
 function showMarker(x: number, y: number): void {
@@ -132,7 +141,7 @@ viewer.addOnceHandler("open", () => {
   updateTilt();
   buildLabels();
   updateCorrectionLink();
-  startWater(viewer, document.getElementById("water") as HTMLButtonElement);
+  startWater(viewer, byId("water", HTMLButtonElement));
 });
 
 window.addEventListener("hashchange", () => {
@@ -173,7 +182,7 @@ function updateLabels(): void {
   const taken: { left: number; right: number; top: number; bottom: number }[] = [];
   const ordered = [...labels].sort((a, b) => a.place.tier - b.place.tier);
   for (const { place, element } of ordered) {
-    let show = zoom >= TIER_MIN_ZOOM[place.tier];
+    let show = zoom >= (TIER_MIN_ZOOM[place.tier] ?? Infinity);
     if (show) {
       const point = viewer.viewport.imageToViewerElementCoordinates(
         new OpenSeadragon.Point(place.x, place.y),
@@ -206,15 +215,15 @@ function updateTilt(): void {
 }
 
 function bindZoom(id: string, action: () => void): void {
-  (document.getElementById(id) as HTMLButtonElement).addEventListener("click", action);
+  byId(id, HTMLButtonElement).addEventListener("click", action);
 }
 
 bindZoom("zoom-in", () => viewer.viewport.zoomBy(1.6).applyConstraints());
 bindZoom("zoom-out", () => viewer.viewport.zoomBy(1 / 1.6).applyConstraints());
 bindZoom("home", () => viewer.viewport.goHome());
 
-const input = document.getElementById("search") as HTMLInputElement;
-const results = document.getElementById("results") as HTMLUListElement;
+const input = byId("search", HTMLInputElement);
+const results = byId("results", HTMLUListElement);
 let places: Place[] = [];
 
 fetch(MANIFEST)

@@ -17,7 +17,9 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font: 15px/1.45 system-ui, sans-serif;
+  font:
+    15px/1.45 system-ui,
+    sans-serif;
 }
 
 #map {

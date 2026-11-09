@@ -175,8 +175,9 @@ function openView(target: Target): void {
   viewer.open(`tiles/pyramid/${viewData(target.view).pyramid}/imphal.dzi`);
 }
 
-function rotateView(): void {
-  const next = VIEW_ORDER[(VIEW_ORDER.indexOf(currentView) + 1) % VIEW_ORDER.length];
+function rotateView(step: number): void {
+  const count = VIEW_ORDER.length;
+  const next = VIEW_ORDER[(VIEW_ORDER.indexOf(currentView) + step + count) % count];
   if (next && viewer.world.getItemCount()) {
     const center = viewCenter();
     const [x, y] = convertPoint(center.x, center.y, viewData(currentView), viewData(next));
@@ -286,7 +287,9 @@ function bindZoom(id: string, action: () => void): void {
 bindZoom("zoom-in", () => viewer.viewport.zoomBy(1.6).applyConstraints());
 bindZoom("zoom-out", () => viewer.viewport.zoomBy(1 / 1.6).applyConstraints());
 bindZoom("home", () => viewer.viewport.goHome());
-bindZoom("rotate", rotateView);
+byId("rotate", HTMLButtonElement).addEventListener("click", (event) => {
+  rotateView(event.altKey ? -1 : 1);
+});
 
 const settingsButton = byId("settings", HTMLButtonElement);
 const settingsPanel = byId("settings-panel", HTMLElement);

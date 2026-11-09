@@ -12,7 +12,7 @@ you add a source; never remove one. "Used for" must be specific.
 | Copernicus GLO-30 DEM | — | Copernicus DEM licence (free, attribution) | https://spacedata.copernicus.eu/collections/copernicus-digital-elevation-model | terrain | "Copernicus DEM © DLR e.V. 2010–2014 and © Airbus Defence and Space GmbH 2014–2018, provided under COPERNICUS by the European Union and ESA" |
 | ESA WorldCover 2021 | v200, tile `N24E093`, 2026-11-08 (`kangla`, `kangla-sw`, `imphal`) | CC BY 4.0 | https://esa-worldcover.org/ | ground class (paddy, built, forest, water) | "© ESA WorldCover project 2021 / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium" |
 | Sentinel-2 L2A | — | CC BY-SA 3.0 IGO | https://dataspace.copernicus.eu/ | NDVI as tree-density cue only; never sampled for colour | "Contains modified Copernicus Sentinel data" |
-| Wikimedia Commons | per file; landmark references viewed 2026-11-08 | per file (CC BY / BY-SA / CC0 / PD only) | per file | landmark sprite references; each sprite's sidecar records the file URL and licence | per file |
+| Wikimedia Commons | per file; landmark references viewed 2026-11-08 and 2026-11-09 | per file (CC BY / BY-SA / CC0 / PD only) | per file | landmark sprite references; each sprite's sidecar records the file URL and licence | per file |
 
 Fetch dates and exact file names are filled in by `manipur fetch`, which
 should append to `data/raw/<area>/SOURCES.txt` and remind you to update this

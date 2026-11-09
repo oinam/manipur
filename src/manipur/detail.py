@@ -686,7 +686,7 @@ def _dome(draw, view, center, base, radius_m, lit, shade) -> None:
             draw.point([(x - half, y - row), (x + half, y - row)], fill=SLOTS_32["background"])
     draw.line([(x - radius, y), (x + radius, y)], fill=SLOTS_32["background"])
     draw.line([(x, y - rows - 8), (x, y - rows)], fill=SLOTS_32["roof_1"])
-    draw.line([(x - 2, y - rows - 5), (x + 2, y - rows - 5)], fill=SLOTS_32["roof_1"])
+    draw.rectangle([x - 1, y - rows - 4, x + 1, y - rows - 2], fill=SLOTS_32["roof_1"])
 
 
 def _roof_cap(draw, view, polygon, height, edge, fill, inset=1.0) -> None:
@@ -965,10 +965,258 @@ def _paint_gate(draw, view, polygon, height) -> None:
             draw.line([(x, y - 7), (x, y)], fill=SLOTS_32["roof_1"])
 
 
+def _box(draw, view, center, u, v, half_u, half_v, base, top, lit, shade, cap) -> None:
+    """Draw a raised block: its camera-facing sides, then its top."""
+    outline = SLOTS_32["background"]
+    ring = _rect_ring(center, u, v, half_u, half_v)
+    for p, q in zip(ring[:-1], ring[1:], strict=True):
+        normal_u, normal_depth = _normal(p, q)
+        if normal_depth < 0:
+            draw.polygon(
+                [
+                    _project(view, *p, base),
+                    _project(view, *q, base),
+                    _project(view, *q, top),
+                    _project(view, *p, top),
+                ],
+                fill=lit if normal_u < 0 else shade,
+                outline=outline,
+            )
+    draw.polygon([_project(view, *point, top) for point in ring[:-1]], fill=cap, outline=outline)
+
+
+def _ribbed_spire(draw, view, center, base, radius_m, tall_m, rib) -> None:
+    """Draw a bullet-shaped spire banded with dark rings."""
+    x, y = _project(view, *center, base)
+    _, tip = _project(view, *center, base + tall_m)
+    radius = max(2, round(radius_m * PIXELS_PER_METER_DETAIL))
+    rows = y - tip
+    for row in range(rows + 1):
+        half = round(radius * math.sqrt(max(0.0, 1 - (row / rows) ** 2.4)))
+        if half:
+            banded = row % rib >= rib - 1
+            lit = SLOTS_32["road_major"] if banded else SLOTS_32["road_line"]
+            shade = SLOTS_32["background"] if banded else SLOTS_32["wall_shade"]
+            split = x + round(half * 0.35)
+            draw.line([(x - half, y - row), (split, y - row)], fill=lit)
+            draw.line([(split + 1, y - row), (x + half, y - row)], fill=shade)
+    draw.line([(x, tip - 5), (x, tip)], fill=SLOTS_32["roof_1"])
+
+
+def _paint_laishang(draw, view, polygon, height) -> None:
+    center, u, v, length, width = _ground_axes(polygon)
+    white, shade = SLOTS_32["wall_lit"], SLOTS_32["wall_shade"]
+    _box(draw, view, center, u, v, length / 2, width / 2, 0.0, 1.4, shade, shade, SLOTS_32["built"])
+    stem, deck = 4.2, 7.0
+    _box(draw, view, center, u, v, stem, stem, 1.4, height * 0.55, white, shade, white)
+    steps = 5
+    for step in range(steps):
+        half = stem + (deck - stem) * (step + 1) / steps
+        low = height * (0.55 + 0.45 * step / steps)
+        high = height * (0.55 + 0.45 * (step + 1) / steps)
+        _box(draw, view, center, u, v, half, half, low, high, white, shade, white)
+    corner = deck - 1.6
+    spires = [(center, 3.4, 9.5, 4)]
+    for sign_u, sign_v in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
+        spires.append((center + u * sign_u * corner + v * sign_v * corner, 1.5, 5.5, 3))
+    for point, radius, tall, rib in sorted(spires, key=lambda spire: -_depth(*spire[0])):
+        _ribbed_spire(draw, view, point, height, radius, tall, rib)
+
+
+def _paint_shanglen(draw, view, polygon, height) -> None:
+    center, u, v, _, _ = _ground_axes(polygon)
+    if abs(u[0]) < abs(v[0]):
+        u, v = v, u
+    ring = np.array(orient(polygon, 1.0).exterior.coords)
+
+    def entrance(p, q, _lit):
+        wall = (q - p) / np.linalg.norm(q - p)
+        if float(np.linalg.norm(q - p)) > 6.5 and abs(float(np.dot(wall, v))) > 0.7:
+            _wall_arch(draw, view, p, q, 0.14, 0.86, height * 0.84, SLOTS_32["road_line"])
+            _wall_arch(draw, view, p, q, 0.24, 0.76, height * 0.72, SLOTS_32["background"])
+
+    _paint_walls(
+        draw,
+        view,
+        ring,
+        height,
+        None,
+        False,
+        False,
+        SLOTS_32["roof_5"],
+        SLOTS_32["roof_shade_5"],
+        entrance,
+    )
+    tile, tile_shade, cream = SLOTS_32["roof_0"], SLOTS_32["roof_shade_0"], SLOTS_32["road_line"]
+    _gable_roof(draw, view, center, v, u, 10.2, 4.6, height - 0.6, 2.2, tile, tile_shade, cream)
+    _gable_roof(draw, view, center, u, v, 10.2, 5.0, height, 4.2, tile, tile_shade, cream)
+    for sign in (-1, 1):
+        x, y = _project(view, *(center + u * sign * 10.2), height + 4.2)
+        draw.line([(x - 4, y - 5), (x, y), (x + 4, y - 5)], fill=cream)
+
+
+def _paint_museum(draw, view, polygon, height) -> None:
+    center, u, v, length, _ = _ground_axes(polygon)
+    ring = np.array(orient(polygon, 1.0).exterior.coords)
+
+    def arcade(p, q, _lit):
+        count = max(1, int(float(np.linalg.norm(q - p)) / 4.5))
+        for index in range(count):
+            t0, t1 = (index + 0.22) / count, (index + 0.78) / count
+            _wall_arch(draw, view, p, q, t0, t1, height * 0.78, SLOTS_32["wall_lit"])
+            inner = (t1 - t0) * 0.2
+            _wall_arch(
+                draw, view, p, q, t0 + inner, t1 - inner, height * 0.66, SLOTS_32["roof_shade_2"]
+            )
+
+    _paint_walls(
+        draw,
+        view,
+        ring,
+        height,
+        None,
+        False,
+        False,
+        SLOTS_32["roof_0"],
+        SLOTS_32["roof_shade_0"],
+        arcade,
+    )
+    _gable_roof(
+        draw,
+        view,
+        center,
+        u,
+        v,
+        length / 2 + 0.6,
+        7.0,
+        height,
+        3.0,
+        SLOTS_32["roof_3"],
+        SLOTS_32["roof_shade_3"],
+        SLOTS_32["wall_lit"],
+    )
+
+
+def _paint_citadel(draw, view, polygon, height) -> None:
+    ring = np.array(orient(polygon, 1.0).exterior.coords)
+
+    def brickwork(p, q, _lit):
+        wall = float(np.linalg.norm(q - p))
+        panels = max(1, int(wall / 5.5))
+        for index in range(panels + 1):
+            point = p + (q - p) * (index / panels)
+            draw.line(
+                [_project(view, *point, height * 0.42), _project(view, *point, height * 0.82)],
+                fill=SLOTS_32["roof_2"],
+            )
+        draw.line(
+            [_project(view, *p, height * 0.84), _project(view, *q, height * 0.84)],
+            fill=SLOTS_32["roof_2"],
+        )
+        for index in range(max(1, int(wall / 2.6))):
+            point = p + (q - p) * ((index + 0.5) / max(1, int(wall / 2.6)))
+            draw.point(_project(view, *point, height * 0.28), fill=SLOTS_32["background"])
+
+    _paint_walls(
+        draw,
+        view,
+        ring,
+        height,
+        None,
+        False,
+        False,
+        SLOTS_32["roof_1"],
+        SLOTS_32["roof_shade_1"],
+        brickwork,
+    )
+    _roof_cap(draw, view, polygon, height, SLOTS_32["roof_1"], SLOTS_32["shrub"], 1.0)
+
+
+def _dome_sites(polygon, count: int) -> list:
+    """Return (center, room in meters) for the roomiest parts of a footprint, roomiest first."""
+    sites = []
+    remaining = polygon
+    for _ in range(count):
+        if remaining.is_empty:
+            break
+        spoke = shapely.maximum_inscribed_circle(remaining)
+        point = np.array(spoke.coords[0])
+        sites.append((point, spoke.length))
+        remaining = remaining.difference(Point(point).buffer(spoke.length + 12.0))
+    return sites
+
+
+def _paint_assembly(draw, view, polygon, height) -> None:
+    _, u, _, _, _ = _ground_axes(polygon)
+    ring = np.array(orient(polygon, 1.0).exterior.coords)
+
+    def facade(p, q, _lit):
+        wall = float(np.linalg.norm(q - p))
+        draw.line(
+            [_project(view, *p, height * 0.92), _project(view, *q, height * 0.92)],
+            fill=SLOTS_32["roof_shade_3"],
+        )
+        for index in range(max(1, int(wall / 4.0))):
+            count = max(1, int(wall / 4.0))
+            t0, t1 = (index + 0.25) / count, (index + 0.75) / count
+            for low, high in ((0.12, 0.42), (0.52, 0.82)):
+                a, b = p + (q - p) * t0, p + (q - p) * t1
+                draw.polygon(
+                    [
+                        _project(view, *a, height * low),
+                        _project(view, *b, height * low),
+                        _project(view, *b, height * high),
+                        _project(view, *a, height * high),
+                    ],
+                    fill=SLOTS_32["water_dark"],
+                )
+
+    _paint_walls(
+        draw,
+        view,
+        ring,
+        height,
+        None,
+        False,
+        False,
+        SLOTS_32["road_line"],
+        SLOTS_32["roof_shade_4"],
+        facade,
+    )
+    _roof_cap(draw, view, polygon, height, SLOTS_32["road_line"], SLOTS_32["roof_4"], 1.2)
+    sites = _dome_sites(polygon, 3)
+    main, room = sites[0]
+    domes = [(main, min(13.0, room * 0.8), 5.0)]
+    for sign in (-1, 1):
+        turret = main + u * sign * (domes[0][1] + 3.5)
+        if polygon.contains(Point(turret)):
+            domes.append((turret, 3.5, 7.0))
+    domes += [(point, min(7.0, spare * 0.7), 2.5) for point, spare in sites[1:]]
+    for point, radius, drum in sorted(domes, key=lambda dome: -_depth(*dome[0])):
+        x, y = _project(view, *point, height)
+        _, top = _project(view, *point, height + drum)
+        half = round(radius * PIXELS_PER_METER_DETAIL * 0.9)
+        draw.rectangle(
+            [x - half, top, x + half, y],
+            fill=SLOTS_32["road_line"],
+            outline=SLOTS_32["background"],
+        )
+        band = (top + y) // 2
+        draw.rectangle([x - half + 2, band - 1, x + half - 2, band + 1], fill=SLOTS_32["water"])
+        _dome(
+            draw, view, point, height + drum, radius, SLOTS_32["road_line"], SLOTS_32["road_track"]
+        )
+
+
 STYLE_PAINTERS = {
+    "assembly": _paint_assembly,
+    "citadel": _paint_citadel,
     "gate": _paint_gate,
+    "laishang": _paint_laishang,
     "market": _paint_market,
+    "museum": _paint_museum,
     "pavilion": _paint_pavilion,
+    "shanglen": _paint_shanglen,
     "stand": _paint_stand,
     "temple": _paint_temple,
     "terminal": _paint_terminal,

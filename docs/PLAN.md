@@ -11,10 +11,12 @@ the Phase 0 record.*
 shareable URLs. Live at https://manipur.oinam.com. The Phase 1 exit (a link a Manipuri friend
 recognizes) is still open.
 
-**Phase 2, 2026-11-08.** In progress on `phase-2-landmarks`, not yet published. Eight
-landmarks are drawn: Shaheed Minar, Kangla Sanathong, Kangla Sha, Shree Govindajee
-Temple, Ima Keithel, Mapal Kangjeibung, the airport terminal, and the two war
-cemeteries. Labels, tilt-shift, and a credits page work. RIMS and Manipur University
+**Phase 2, 2026-11-09.** In progress on `phase-2-landmarks`. The first round is
+published. Eight landmarks are live: Shaheed Minar, Kangla Sanathong, Kangla Sha,
+Shree Govindajee Temple, Ima Keithel, Mapal Kangjeibung, the airport terminal, and
+the two war cemeteries. Five more are drawn locally: Ibudhou Pakhangba Temple, Uttra
+Shanglen, Kangla Museum, the Kangla citadel walls, and the Manipur Legislative
+Assembly. Labels, tilt-shift, and a credits page work. RIMS and Manipur University
 have no usable Commons photo yet, so they have labels only.
 
 **Phase 0 record:**

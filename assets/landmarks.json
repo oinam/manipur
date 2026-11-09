@@ -104,5 +104,99 @@
         "author": "Herojit th"
       }
     ]
+  },
+  {
+    "label": "Ibudhou Pakhangba Temple",
+    "style": "laishang",
+    "replaces": [
+      "ob/7MPMRW5R+7RCP"
+    ],
+    "height_m": 9.0,
+    "note": "Footprint is Open Buildings under the OSM place of worship, read as the temple and its platform; tower proportions follow the photos.",
+    "references": [
+      {
+        "url": "https://commons.wikimedia.org/wiki/File:Eastern_view_of_the_Pakhangba_Temple_inside_the_Kangla_fort_in_Imphal.jpg",
+        "license": "CC BY-SA 4.0",
+        "author": "Haoreima"
+      },
+      {
+        "url": "https://commons.wikimedia.org/wiki/File:Northwestern_view_of_the_Pakhangba_Temple_inside_the_Kangla_fort_in_Imphal.jpg",
+        "license": "CC BY-SA 4.0",
+        "author": "Haoreima"
+      }
+    ],
+    "clearing_m": 12.0
+  },
+  {
+    "label": "Uttra Shanglen",
+    "style": "shanglen",
+    "replaces": [
+      "osm/way/690053698"
+    ],
+    "height_m": 6.0,
+    "note": "OSM tags this cruciform footprint only as a building. Identified from a photo showing the Uttra Shanglen directly beside the two Kangla Sha.",
+    "references": [
+      {
+        "url": "https://commons.wikimedia.org/wiki/File:Eastern_side_of_the_Kangla_Uttra_Sanglen_-_Royal_building_housing_the_throne_room_of_Meitei_monarchs_-_Sacred_institution_of_Sanamahism_religion_-_Classical_Meitei_architecture_-_Kangla_Fort,_Imphal,_Kangleipak_01.jpg",
+        "license": "CC BY 4.0",
+        "author": "Haoreima"
+      },
+      {
+        "url": "https://commons.wikimedia.org/wiki/File:The_northeastern_view_of_the_Kangla_Uttra_Shanglen_and_the_classical_colossal_statues_of_Kanglasha,_a_traditional_Meitei_dragon_lion_deity,_inside_the_Kangla_Fort_in_Imphal.jpg",
+        "license": "CC BY-SA 4.0",
+        "author": "Haoreima"
+      }
+    ],
+    "clearing_m": 14.0
+  },
+  {
+    "label": "Kangla Museum",
+    "style": "museum",
+    "replaces": [
+      "osm/way/690053703"
+    ],
+    "height_m": 8.0,
+    "note": "Footprint is OSM, under the OSM museum node. Only part of the building shows in the reference, so the roof and arcade are estimated.",
+    "references": [
+      {
+        "url": "https://commons.wikimedia.org/wiki/File:Entrance_Gate_of_the_Kangla_Museum_(%EA%AF%80%EA%AF%AA%EA%AF%82%EA%AF%A5_%EA%AF%83%EA%AF%A4%EA%AF%8E%EA%AF%96%EA%AF%A4%EA%AF%8C%EA%AF%9D)_located_inside_the_Kangla_Fort,_Imphal_West_district,_Kangleipak_(Manipur)_03.jpg",
+        "license": "CC0",
+        "author": "Haoreima"
+      }
+    ]
+  },
+  {
+    "credit": "Kangla citadel walls",
+    "style": "citadel",
+    "replaces": [
+      "osm/way/690053705",
+      "osm/way/690053706"
+    ],
+    "height_m": 6.0,
+    "note": "OSM does not map the citadel walls. These two adjoining L-shaped footprints are an interpretation from coarse photo geotags, so they carry no label.",
+    "references": [
+      {
+        "url": "https://commons.wikimedia.org/wiki/File:Southern_defensive_wall_of_the_innermost_Meitei_imperial_citadel_of_the_Kangla_Fort,_Imphal,_Kangleipak_-_Classical_Meitei_military_architecture_02.jpg",
+        "license": "CC BY 4.0",
+        "author": "Haoreima"
+      }
+    ],
+    "clearing_m": 12.0
+  },
+  {
+    "label": "Manipur Legislative Assembly",
+    "style": "assembly",
+    "replaces": [
+      "ob/7MPMRWHR+8JPJ"
+    ],
+    "height_m": 12.0,
+    "note": "Footprint is Open Buildings under the OSM name; dome positions are placed by the footprint's shape, not surveyed.",
+    "references": [
+      {
+        "url": "https://commons.wikimedia.org/wiki/File:Manipur_Legislative_assembly_building.jpg",
+        "license": "CC BY 3.0",
+        "author": "Ramchandra9"
+      }
+    ]
   }
 ]

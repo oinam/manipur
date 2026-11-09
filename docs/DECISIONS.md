@@ -128,3 +128,14 @@ and tile settings, and is cached as immutable. `tiles/manifest.json` names the
 current hash and is revalidated on every load, as are the pages and the search and
 credits files. A re-render therefore gets new tile URLs, and no visitor can see old
 and new tiles mixed.
+
+## 2026-11-09 — Second landmark round
+
+The inner Kangla and the Assembly come next because Commons covers them well. OSM
+names the Pakhangba temple, the Kangla Museum, and the Assembly at points on their
+footprints. It does not name the Uttra Shanglen or the citadel walls. The Uttra
+Shanglen is the cruciform footprint beside the Kangla Sha, as a photo shows. The
+citadel walls are two adjoining footprints that fit coarse photo geotags, so they
+are drawn without a label until someone confirms them.
+
+Dome finials are a spike and ball; the earlier crossbar read as a Christian cross.

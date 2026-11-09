@@ -156,3 +156,13 @@ Live aircraft are planned in `docs/AIRCRAFT.md`; nothing is built yet.
 The map opens on central Imphal at image zoom 0.5, with Ima Keithel and Kangla both
 in frame, instead of fitting the whole canvas. A URL hash still wins, and the home
 button still shows all of Imphal.
+
+## 2026-11-09 — Four viewing directions
+
+The map can be seen from four sides: the chosen 2:1 projection at quarter turns,
+named `nw` (the default), `sw`, `se`, and `ne` for the way the viewer faces. Each is a
+full render and its own pyramid, because the art is pre-drawn; free rotation would need
+a different renderer. The default view's frames are unchanged. Search and flow stay in
+default-view coordinates, and the viewer converts them through the ground plane using
+each view's matrix from the manifest. Non-default views add a fourth hash segment, so
+older links still open as they did.

@@ -1,5 +1,6 @@
 import OpenSeadragon from "openseadragon";
 import { startWater } from "./water";
+import { DEFAULT_VIEW, VIEW_ORDER, convertPoint, type View } from "./views";
 
 interface Place {
   name: string;
@@ -7,6 +8,13 @@ interface Place {
   x: number;
   y: number;
   tier: number;
+}
+
+interface Target {
+  x: number;
+  y: number;
+  zoom: number;
+  view: string;
 }
 
 interface Label {
@@ -26,7 +34,7 @@ const TILT_NONE_ZOOM = 0.4;
 const SITE_URL = "https://manipur.oinam.com/";
 const NEW_ISSUE_URL = "https://github.com/oinam/manipur/issues/new";
 const NEAR_PLACE_MAX_PX = 800;
-const OPENING_VIEW = { x: 18900, y: 8400, zoom: 0.5 };
+const OPENING_VIEW: Target = { x: 18900, y: 8400, zoom: 0.5, view: DEFAULT_VIEW };
 
 function byId<T extends HTMLElement>(id: string, type: new () => T): T {
   const element = document.getElementById(id);
@@ -54,13 +62,14 @@ function imageZoomToViewport(zoom: number): number {
   return viewer.viewport.imageToViewportZoom(zoom);
 }
 
-function readHash(): { x: number; y: number; zoom: number } | null {
-  const parts = location.hash.slice(1).split("/").map(Number);
-  const [zoom = NaN, x = NaN, y = NaN] = parts;
-  if (parts.length !== 3 || ![zoom, x, y].every(Number.isFinite)) {
+function readHash(): Target | null {
+  const parts = location.hash.slice(1).split("/");
+  const [zoom = NaN, x = NaN, y = NaN] = parts.slice(0, 3).map(Number);
+  const view = parts[3] ?? DEFAULT_VIEW;
+  if (parts.length < 3 || parts.length > 4 || ![zoom, x, y].every(Number.isFinite)) {
     return null;
   }
-  return { zoom, x, y };
+  return VIEW_ORDER.includes(view) ? { zoom, x, y, view } : null;
 }
 
 function goTo(x: number, y: number, imageZoom: number, immediately: boolean): void {
@@ -76,7 +85,8 @@ function viewCenter(): OpenSeadragon.Point {
 function viewHash(): string {
   const center = viewCenter();
   const zoom = viewer.viewport.viewportToImageZoom(viewer.viewport.getZoom());
-  return `#${zoom.toFixed(3)}/${Math.round(center.x)}/${Math.round(center.y)}`;
+  const suffix = currentView === DEFAULT_VIEW ? "" : `/${currentView}`;
+  return `#${zoom.toFixed(3)}/${Math.round(center.x)}/${Math.round(center.y)}${suffix}`;
 }
 
 function writeHash(): void {
@@ -115,6 +125,10 @@ function updateCorrectionLink(): void {
 }
 
 const correctionLink = byId("correction", HTMLAnchorElement);
+let views: Record<string, View> = {};
+let currentView = DEFAULT_VIEW;
+let pendingTarget: Target | null = null;
+let water: ReturnType<typeof startWater> | null = null;
 let marker: HTMLElement | null = null;
 
 function showMarker(x: number, y: number): void {
@@ -130,23 +144,75 @@ function showMarker(x: number, y: number): void {
   });
 }
 
-viewer.addOnceHandler("open", () => {
-  const start = readHash() ?? OPENING_VIEW;
-  goTo(start.x, start.y, start.zoom, true);
-  viewer.addHandler("animation-finish", writeHash);
-  viewer.addHandler("animation-finish", updateLabels);
-  viewer.addHandler("animation-finish", updateCorrectionLink);
-  viewer.addHandler("animation", updateTilt);
+function toCurrentView(x: number, y: number): [number, number] {
+  return convertPoint(x, y, viewData(DEFAULT_VIEW), viewData(currentView));
+}
+
+function viewData(name: string): View {
+  const view = views[name];
+  if (!view) {
+    throw new Error(`Unknown view ${name}`);
+  }
+  return view;
+}
+
+function placeLabelsInView(): void {
+  if (Object.keys(views).length) {
+    places = basePlaces.map((place) => {
+      const [x, y] = toCurrentView(place.x, place.y);
+      return { ...place, x, y };
+    });
+  }
+}
+
+function openView(target: Target): void {
+  currentView = target.view;
+  pendingTarget = target;
+  placeLabelsInView();
+  // Opening clears the overlays, so the labels and marker are rebuilt or dropped.
+  labels.length = 0;
+  marker = null;
+  viewer.open(`tiles/pyramid/${viewData(target.view).pyramid}/imphal.dzi`);
+}
+
+function rotateView(): void {
+  const next = VIEW_ORDER[(VIEW_ORDER.indexOf(currentView) + 1) % VIEW_ORDER.length];
+  if (next && viewer.world.getItemCount()) {
+    const center = viewCenter();
+    const [x, y] = convertPoint(center.x, center.y, viewData(currentView), viewData(next));
+    openView({ x, y, zoom: imageZoom(), view: next });
+  }
+}
+
+viewer.addHandler("open", () => {
+  if (pendingTarget) {
+    goTo(pendingTarget.x, pendingTarget.y, pendingTarget.zoom, true);
+    pendingTarget = null;
+  }
   updateTilt();
   buildLabels();
   updateCorrectionLink();
-  startWater(viewer, byId("water", HTMLButtonElement));
+  writeHash();
+  if (water) {
+    water.refresh();
+  } else {
+    water = startWater(viewer, byId("water", HTMLButtonElement), toCurrentView);
+    viewer.addHandler("animation-finish", writeHash);
+    viewer.addHandler("animation-finish", updateLabels);
+    viewer.addHandler("animation-finish", updateCorrectionLink);
+    viewer.addHandler("animation", updateTilt);
+  }
 });
 
 window.addEventListener("hashchange", () => {
   const target = readHash();
-  if (target) {
+  if (!target) {
+    return;
+  }
+  if (target.view === currentView) {
     goTo(target.x, target.y, target.zoom, false);
+  } else {
+    openView(target);
   }
 });
 
@@ -220,15 +286,18 @@ function bindZoom(id: string, action: () => void): void {
 bindZoom("zoom-in", () => viewer.viewport.zoomBy(1.6).applyConstraints());
 bindZoom("zoom-out", () => viewer.viewport.zoomBy(1 / 1.6).applyConstraints());
 bindZoom("home", () => viewer.viewport.goHome());
+bindZoom("rotate", rotateView);
 
 const input = byId("search", HTMLInputElement);
 const results = byId("results", HTMLUListElement);
+let basePlaces: Place[] = [];
 let places: Place[] = [];
 
 fetch(MANIFEST)
   .then((response) => response.json())
-  .then((manifest: { pyramid: string }) => {
-    viewer.open(`tiles/pyramid/${manifest.pyramid}/imphal.dzi`);
+  .then((manifest: { views: Record<string, View> }) => {
+    views = manifest.views;
+    openView(readHash() ?? OPENING_VIEW);
   })
   .catch((error: unknown) => {
     console.error("Tile manifest failed to load", error);
@@ -238,7 +307,9 @@ fetch(MANIFEST)
 fetch(SEARCH_INDEX, { cache: "no-cache" })
   .then((response) => response.json())
   .then((entries: Place[]) => {
+    basePlaces = entries;
     places = entries;
+    placeLabelsInView();
     buildLabels();
     if (viewer.world.getItemCount()) {
       updateCorrectionLink();

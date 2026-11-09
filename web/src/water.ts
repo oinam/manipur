@@ -96,7 +96,11 @@ function toSegments(lines: FlowLine[]): Segment[] {
   return segments;
 }
 
-export function startWater(viewer: OpenSeadragon.Viewer, toggle: HTMLButtonElement): void {
+export function startWater(
+  viewer: OpenSeadragon.Viewer,
+  toggle: HTMLButtonElement,
+  toImage: (x: number, y: number) => [number, number],
+): { refresh: () => void } {
   const source = (viewer.drawer as unknown as { canvas: HTMLCanvasElement }).canvas;
   const canvas = document.createElement("canvas");
   canvas.className = "water";
@@ -105,6 +109,7 @@ export function startWater(viewer: OpenSeadragon.Viewer, toggle: HTMLButtonEleme
   const mask = document.createElement("canvas");
   const sourceContext = context2d(source);
 
+  let lines: FlowLine[] = [];
   let segments: Segment[] = [];
   let ready = false;
   let moving = false;
@@ -293,10 +298,22 @@ export function startWater(viewer: OpenSeadragon.Viewer, toggle: HTMLButtonEleme
   viewer.world.addHandler("add-item", scheduleRebuild);
   viewer.addHandler("tile-loaded", scheduleRebuild);
 
+  function refresh(): void {
+    segments = toSegments(
+      lines.map((line) => ({
+        width: line.width,
+        points: line.points.map(([x, y]) => toImage(x, y)),
+      })),
+    );
+    clear();
+    scheduleRebuild();
+  }
+
   fetch(FLOW_INDEX, { cache: "no-cache" })
     .then((response) => response.json())
-    .then((lines: FlowLine[]) => {
-      segments = toSegments(lines);
+    .then((loaded: FlowLine[]) => {
+      lines = loaded;
+      refresh();
     })
     .catch((error: unknown) => {
       console.error("Water flow lines failed to load", error);
@@ -304,4 +321,5 @@ export function startWater(viewer: OpenSeadragon.Viewer, toggle: HTMLButtonEleme
 
   scheduleRebuild();
   requestAnimationFrame(draw);
+  return { refresh };
 }

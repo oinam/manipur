@@ -7,7 +7,7 @@ import math
 import multiprocessing
 import time
 import zlib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import geopandas as gpd
@@ -36,6 +36,7 @@ from manipur.render import (
     ROAD_SLOTS,
     SEED,
     Layers,
+    Projection,
     Viewport,
     centered_viewport,
     full_viewport,
@@ -45,6 +46,9 @@ from manipur.render import (
 CROP_CENTER = (93.93759, 24.80343)
 CROP_PX = 900
 PROJECTION = PROJECTION_B
+# The chosen projection seen from four sides, named for the direction the viewer faces.
+VIEWS = {"nw": 45.0, "sw": 135.0, "se": 225.0, "ne": 315.0}
+DEFAULT_VIEW = "nw"
 SPRITE_DIR = Path("assets/sprites")
 LANDMARKS_PATH = Path("assets/landmarks.json")
 TRANSPARENT = 255
@@ -1663,12 +1667,24 @@ def detail(area: Area) -> None:
     print(output)
 
 
-def frames_dir(area: Area) -> Path:
-    return Path("out") / area.name / "frames"
+def view_projection(view: str) -> Projection:
+    return replace(PROJECTION_B, rotation_deg=VIEWS[view])
 
 
-def manifest_path(area: Area) -> Path:
-    return Path("out") / area.name / "manifest.json"
+def use_view(view: str) -> None:
+    """Point every painter in this process at one view."""
+    global PROJECTION  # noqa: PLW0603
+    PROJECTION = view_projection(view)
+
+
+def frames_dir(area: Area, view: str = DEFAULT_VIEW) -> Path:
+    name = "frames" if view == DEFAULT_VIEW else f"frames-{view}"
+    return Path("out") / area.name / name
+
+
+def manifest_path(area: Area, view: str = DEFAULT_VIEW) -> Path:
+    name = "manifest.json" if view == DEFAULT_VIEW else f"manifest-{view}.json"
+    return Path("out") / area.name / name
 
 
 def frame_view(canvas: Viewport, column: int, row: int) -> Viewport:
@@ -1689,16 +1705,18 @@ def render_frame(scene: Scene, canvas: Viewport, column: int, row: int) -> np.nd
 _worker: dict = {}
 
 
-def _init_worker(area: Area, canvas: Viewport) -> None:
+def _init_worker(area: Area, canvas: Viewport, view: str) -> None:
+    use_view(view)
     _worker["scene"] = load_scene(area, use_cached_trees=True)
     _worker["canvas"] = canvas
     _worker["area"] = area
+    _worker["view"] = view
 
 
 def _render_and_save(cell: tuple[int, int]) -> tuple[int, int]:
     column, row = cell
     slots = render_frame(_worker["scene"], _worker["canvas"], column, row)
-    save_slots(slots, frames_dir(_worker["area"]) / f"{row:03d}_{column:03d}.png")
+    save_slots(slots, frames_dir(_worker["area"], _worker["view"]) / f"{row:03d}_{column:03d}.png")
     return cell
 
 
@@ -1707,31 +1725,43 @@ def frame_grid(canvas: Viewport) -> tuple[int, int]:
 
 
 def frames(area: Area, only: list[tuple[int, int]] | None = None) -> None:
-    """Render the area as a grid of frames, in parallel, and write its manifest."""
+    """Render every view of the area as a grid of frames and write its manifests."""
     started = time.perf_counter()
     scene = load_scene(area)
     np.save(trees_path(area), scene.trees)
-    canvas = full_viewport(PROJECTION, scene.layers)
+    print(f"{area.name}: {len(scene.trees)} trees")
+    for view in VIEWS:
+        _render_view(area, scene, view, only)
+    print(f"done in {time.perf_counter() - started:.0f}s")
+
+
+def _render_view(
+    area: Area, scene: Scene, view: str, only: list[tuple[int, int]] | None = None
+) -> None:
+    started = time.perf_counter()
+    projection = view_projection(view)
+    canvas = full_viewport(projection, scene.layers)
     columns, rows = frame_grid(canvas)
-    print(f"{area.name}: {len(scene.trees)} trees, {columns} x {rows} frames")
-    directory = frames_dir(area)
+    print(f"{view}: {columns} x {rows} frames")
+    directory = frames_dir(area, view)
     directory.mkdir(parents=True, exist_ok=True)
     cells = only or [(column, row) for row in range(rows) for column in range(columns)]
     context = multiprocessing.get_context("spawn")
-    with context.Pool(WORKERS, _init_worker, (area, canvas)) as pool:
+    with context.Pool(WORKERS, _init_worker, (area, canvas, view)) as pool:
         for count, _ in enumerate(pool.imap_unordered(_render_and_save, cells), 1):
             if count % 10 == 0 or count == len(cells):
                 print(
                     f"{count}/{len(cells)} frames, {time.perf_counter() - started:.0f}s", flush=True
                 )
-    manifest_path(area).write_text(
+    manifest_path(area, view).write_text(
         json.dumps(
             {
                 "area": area.name,
-                "projection": PROJECTION.name,
+                "projection": projection.name,
                 "pixels_per_meter": 2.0,
-                "rotation_deg": PROJECTION.rotation_deg,
-                "ground_scale": PROJECTION.ground_scale,
+                "rotation_deg": projection.rotation_deg,
+                "ground_scale": projection.ground_scale,
+                "matrix": list(projection.matrix),
                 "x_offset": canvas.x_offset,
                 "y_offset": canvas.y_offset,
                 "canvas_width": columns * FRAME_PX,
@@ -1744,4 +1774,3 @@ def frames(area: Area, only: list[tuple[int, int]] | None = None) -> None:
         )
         + "\n"
     )
-    print(f"done in {time.perf_counter() - started:.0f}s")

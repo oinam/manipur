@@ -7,7 +7,9 @@ import pytest
 import shapely
 from PIL import Image
 
+from manipur.areas import get_area
 from manipur.detail import (
+    DEFAULT_VIEW,
     FRAME_PX,
     LANDMARKS_PATH,
     SLOTS_32,
@@ -15,8 +17,11 @@ from manipur.detail import (
     TRANSPARENT,
     build_scene,
     detail_colors,
+    frames_dir,
+    manifest_path,
     render_detail,
     render_frame,
+    view_projection,
 )
 from manipur.render import PROJECTION_B, Layers, centered_viewport
 
@@ -71,3 +76,18 @@ def test_adjacent_frames_join_without_a_seam():
     canvas = centered_viewport(PROJECTION_B, 150, 150, width, FRAME_PX)
     joined = np.hstack([render_frame(scene, canvas, 0, 0), render_frame(scene, canvas, 1, 0)])
     assert np.array_equal(joined, render_detail(scene, canvas))
+
+
+def test_default_view_keeps_its_paths():
+    area = get_area("imphal")
+    assert frames_dir(area).name == "frames"
+    assert frames_dir(area, "sw").name == "frames-sw"
+    assert manifest_path(area).name == "manifest.json"
+    assert manifest_path(area, "ne").name == "manifest-ne.json"
+
+
+def test_views_are_quarter_turns_of_the_chosen_projection():
+    assert view_projection(DEFAULT_VIEW) == PROJECTION_B
+    a, b, _, _ = view_projection("nw").matrix
+    next_a, next_b, _, _ = view_projection("sw").matrix
+    assert (round(next_a, 6), round(next_b, 6)) == (round(-b, 6), round(a, 6))

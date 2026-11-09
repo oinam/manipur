@@ -10,7 +10,14 @@ import pyvips
 from pyproj import Transformer
 
 from manipur.areas import Area
-from manipur.detail import LANDMARKS_PATH, PROJECTION, SPRITE_DIR, frames_dir, manifest_path
+from manipur.detail import (
+    LANDMARKS_PATH,
+    PROJECTION,
+    SPRITE_DIR,
+    VIEWS,
+    frames_dir,
+    manifest_path,
+)
 from manipur.prepare import METRIC_CRS, derived_path
 
 TILE_PX = 512
@@ -127,20 +134,16 @@ def landmark_credits() -> list[dict]:
     return sorted(entries.values(), key=lambda credit: credit["name"])
 
 
-def tile(area: Area) -> None:
-    manifest = json.loads(manifest_path(area).read_text())
+def _build_pyramid(area: Area, view: str, target: Path, manifest: dict) -> str:
+    """Write one view's tiles and return its version."""
     columns, rows = manifest["columns"], manifest["rows"]
     paths = [
-        frames_dir(area) / f"{row:03d}_{column:03d}.png"
+        frames_dir(area, view) / f"{row:03d}_{column:03d}.png"
         for row in range(rows)
         for column in range(columns)
     ]
     images = [pyvips.Image.new_from_file(str(path), access="sequential") for path in paths]
     joined = pyvips.Image.arrayjoin(images, across=columns)
-
-    target = tiles_dir(area)
-    if target.exists():
-        shutil.rmtree(target)
     version = pyramid_version(paths, columns)
     pyramid = target / PYRAMID_DIR / version
     pyramid.mkdir(parents=True)
@@ -151,11 +154,30 @@ def tile(area: Area) -> None:
         suffix=TILE_SUFFIX,
         depth="onepixel",
     )
+    print(f"{view} {pyramid}: {joined.width} x {joined.height}")
+    return version
 
+
+def tile(area: Area) -> None:
+    target = tiles_dir(area)
+    if target.exists():
+        shutil.rmtree(target)
+    views = {}
+    for view in VIEWS:
+        manifest = json.loads(manifest_path(area, view).read_text())
+        views[view] = {
+            "pyramid": _build_pyramid(area, view, target, manifest),
+            "matrix": manifest["matrix"],
+            "x_offset": manifest["x_offset"],
+            "y_offset": manifest["y_offset"],
+        }
+
+    # Search and flow are written in the default view; the viewer converts them for the others.
+    manifest = json.loads(manifest_path(area).read_text())
     entries = search_index(area, manifest["x_offset"], manifest["y_offset"])
     (target / "search.json").write_text(json.dumps(entries, ensure_ascii=False))
     (target / "credits.json").write_text(json.dumps(landmark_credits(), ensure_ascii=False))
     flow = flow_lines(area, manifest["x_offset"], manifest["y_offset"])
     (target / "flow.json").write_text(json.dumps(flow))
-    (target / "manifest.json").write_text(json.dumps({**manifest, "pyramid": version}))
-    print(f"{pyramid}: {joined.width} x {joined.height}, {len(entries)} search entries")
+    (target / "manifest.json").write_text(json.dumps({**manifest, "views": views}))
+    print(f"{len(entries)} search entries")

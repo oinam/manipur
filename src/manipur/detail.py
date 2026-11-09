@@ -1208,8 +1208,37 @@ def _paint_assembly(draw, view, polygon, height) -> None:
         )
 
 
+def _paint_cathedral(draw, view, polygon, height) -> None:
+    center, u, v, length, width = _ground_axes(polygon)
+    ring = np.array(orient(polygon, 1.0).exterior.coords)
+    tin, tin_shade = SLOTS_32["roof_5"], SLOTS_32["roof_shade_5"]
+    white, shade = SLOTS_32["wall_lit"], SLOTS_32["wall_shade"]
+
+    def windows(p, q, _lit):
+        count = max(1, int(float(np.linalg.norm(q - p)) / 6.0))
+        for index in range(count):
+            t0, t1 = (index + 0.4) / count, (index + 0.6) / count
+            _wall_arch(draw, view, p, q, t0, t1, height * 0.55, SLOTS_32["roof_2"])
+
+    _paint_walls(draw, view, ring, height, None, False, False, decorate=windows)
+    arm = min(length, width) * 0.24
+    _gable_roof(draw, view, center, v, u, width / 2 + 0.5, arm, height, 4.5, tin, tin_shade, white)
+    _gable_roof(draw, view, center, u, v, length / 2 + 0.5, arm, height, 4.5, tin, tin_shade, white)
+    towers = [(center, 3.6, 5.5)]
+    for sign_u, sign_v in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
+        towers.append((center + u * sign_u * arm * 1.15 + v * sign_v * arm * 1.15, 2.3, 3.5))
+    for point, half, lift in sorted(towers, key=lambda tower: -_depth(*tower[0])):
+        top = height + lift
+        _box(draw, view, point, u, v, half, half, height, top, white, shade, white)
+        _pyramid_roof(draw, view, point, u, v, half + 0.7, half + 0.7, top, 5.0, tin, tin_shade)
+        x, y = _project(view, *point, top + 5.0)
+        draw.line([(x, y - 7), (x, y)], fill=white)
+        draw.line([(x - 2, y - 5), (x + 2, y - 5)], fill=white)
+
+
 STYLE_PAINTERS = {
     "assembly": _paint_assembly,
+    "cathedral": _paint_cathedral,
     "citadel": _paint_citadel,
     "gate": _paint_gate,
     "laishang": _paint_laishang,

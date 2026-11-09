@@ -198,5 +198,22 @@
         "author": "Ramchandra9"
       }
     ]
+  },
+  {
+    "label": "St. Joseph's Cathedral",
+    "style": "cathedral",
+    "replaces": [
+      "osm/way/665527355"
+    ],
+    "height_m": 8.0,
+    "note": "Footprint is OSM building=church. Tower positions follow the photo and are estimated.",
+    "references": [
+      {
+        "url": "https://commons.wikimedia.org/wiki/File:Imphal_-_St_Josphes_cathedral.JPG",
+        "license": "CC BY-SA 3.0",
+        "author": "Mu6"
+      }
+    ],
+    "clearing_m": 8.0
   }
 ]

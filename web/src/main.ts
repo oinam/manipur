@@ -196,7 +196,7 @@ viewer.addHandler("open", () => {
   if (water) {
     water.refresh();
   } else {
-    water = startWater(viewer, byId("water", HTMLButtonElement), toCurrentView);
+    water = startWater(viewer, byId("animation", HTMLInputElement), toCurrentView);
     viewer.addHandler("animation-finish", writeHash);
     viewer.addHandler("animation-finish", updateLabels);
     viewer.addHandler("animation-finish", updateCorrectionLink);
@@ -287,6 +287,38 @@ bindZoom("zoom-in", () => viewer.viewport.zoomBy(1.6).applyConstraints());
 bindZoom("zoom-out", () => viewer.viewport.zoomBy(1 / 1.6).applyConstraints());
 bindZoom("home", () => viewer.viewport.goHome());
 bindZoom("rotate", rotateView);
+
+const settingsButton = byId("settings", HTMLButtonElement);
+const settingsPanel = byId("settings-panel", HTMLElement);
+
+function showSettings(open: boolean): void {
+  settingsPanel.hidden = !open;
+  settingsButton.setAttribute("aria-expanded", String(open));
+}
+
+settingsButton.addEventListener("click", () => {
+  showSettings(settingsPanel.hidden);
+});
+// Capture, because the map stops pointer events from bubbling.
+document.addEventListener(
+  "pointerdown",
+  (event) => {
+    const target = event.target;
+    if (
+      target instanceof Node &&
+      !settingsPanel.contains(target) &&
+      !settingsButton.contains(target)
+    ) {
+      showSettings(false);
+    }
+  },
+  true,
+);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    showSettings(false);
+  }
+});
 
 const input = byId("search", HTMLInputElement);
 const results = byId("results", HTMLUListElement);

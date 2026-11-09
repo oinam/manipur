@@ -31,14 +31,19 @@
         ↻
       </button>
       <button
-        id="water"
+        id="settings"
         type="button"
-        aria-label="Animate the water"
-        title="Animate the water"
-        aria-pressed="false"
+        aria-label="Settings"
+        title="Settings"
+        aria-expanded="false"
+        aria-controls="settings-panel"
       >
-        ≈
+        ⚙&#xFE0E;
       </button>
+    </div>
+
+    <div id="settings-panel" class="panel settings" hidden>
+      <label><input id="animation" type="checkbox" /> Animation</label>
     </div>
 
     <footer class="panel credits">

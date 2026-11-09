@@ -166,3 +166,9 @@ a different renderer. The default view's frames are unchanged. Search and flow s
 default-view coordinates, and the viewer converts them through the ground plane using
 each view's matrix from the manifest. Non-default views add a fourth hash segment, so
 older links still open as they did.
+
+## 2026-11-09 — Settings
+
+A gear opens a settings panel. Its first entry, Animation, replaces the water button
+and is the one switch for moving things: water now, aircraft if they are built. It
+keeps the saved water choice and still starts off under Reduce Motion.

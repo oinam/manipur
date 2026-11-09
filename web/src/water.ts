@@ -98,7 +98,7 @@ function toSegments(lines: FlowLine[]): Segment[] {
 
 export function startWater(
   viewer: OpenSeadragon.Viewer,
-  toggle: HTMLButtonElement,
+  toggle: HTMLInputElement,
   toImage: (x: number, y: number) => [number, number],
 ): { refresh: () => void } {
   const source = (viewer.drawer as unknown as { canvas: HTMLCanvasElement }).canvas;
@@ -116,7 +116,7 @@ export function startWater(
   let lastFrame = 0;
   let rebuildTimer = 0;
   let enabled = prefersMotion();
-  toggle.setAttribute("aria-pressed", String(enabled));
+  toggle.checked = enabled;
 
   function imageZoom(): number {
     return viewer.viewport.viewportToImageZoom(viewer.viewport.getZoom(true));
@@ -277,9 +277,8 @@ export function startWater(
     context.globalCompositeOperation = "source-over";
   }
 
-  toggle.addEventListener("click", () => {
-    enabled = !enabled;
-    toggle.setAttribute("aria-pressed", String(enabled));
+  toggle.addEventListener("change", () => {
+    enabled = toggle.checked;
     saveMotion(enabled);
     if (!enabled) {
       clear();

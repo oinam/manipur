@@ -179,7 +179,8 @@ fetch(MANIFEST)
     console.error("Tile manifest failed to load", error);
   });
 
-fetch(SEARCH_INDEX)
+// Browsers may still hold the tierless Phase 1 index under its old one-day header.
+fetch(SEARCH_INDEX, { cache: "no-cache" })
   .then((response) => response.json())
   .then((entries: Place[]) => {
     places = entries;

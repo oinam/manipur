@@ -102,6 +102,12 @@ TREE_ODDS = {
 TREE_SPACING_M = 6.5
 MAJOR_ROADS = [name for name, slot in ROAD_SLOTS.items() if slot == "road_major"]
 SUN_U, SUN_D = 0.94, -0.34
+LOW_HOUSE_MAX_M2 = 160
+LOW_HOUSE_MAX_M = 4.4
+VERANDA_M = 1.5
+VERANDA_INNER_M = 2.6
+VERANDA_OUTER_M = 2.1
+WATER_TANK_MIN_M2 = 25
 SHADOW_PER_HEIGHT = 0.75
 STOREY_M = 3.2
 BLUR_RADIUS_PX = 16
@@ -507,11 +513,16 @@ def _classify(area: float, height: float, rectangular: bool, building_id: str, s
     return "flat"
 
 
-def _paint_pitched(draw, view, polygon, height, slot, shade, windows, ribbed) -> None:
+def _long_side_corners(polygon) -> np.ndarray:
+    """Return the footprint's rectangle corners, starting along a long side."""
     corners = np.array(shapely.minimum_rotated_rectangle(polygon).exterior.coords)[:4]
     if np.linalg.norm(corners[1] - corners[0]) < np.linalg.norm(corners[2] - corners[1]):
         corners = np.roll(corners, -1, axis=0)
-    a, b, c, d = corners
+    return corners
+
+
+def _paint_pitched(draw, view, polygon, height, slot, shade, windows, ribbed) -> None:
+    a, b, c, d = _long_side_corners(polygon)
     width = float(np.linalg.norm(c - b))
     rise = float(np.clip(width * 0.2, 0.8, 3.0))
     eave = max(2.4, height - rise)
@@ -558,6 +569,31 @@ def _paint_pitched(draw, view, polygon, height, slot, shade, windows, ribbed) ->
                 )
 
 
+def _paint_low_house(draw, view, polygon, height, slot, shade) -> None:
+    """Draw a low tin house with a veranda along its near long side."""
+    _paint_pitched(draw, view, polygon, min(height, LOW_HOUSE_MAX_M), slot, shade, True, True)
+    a, b, c, d = _long_side_corners(polygon)
+    if _depth(*((a + b) / 2)) > _depth(*((c + d) / 2)):
+        a, b, c, d = c, d, a, b
+    out = (a - d) / np.linalg.norm(a - d) * VERANDA_M
+    draw.polygon(
+        [
+            _project(view, *a, VERANDA_INNER_M),
+            _project(view, *b, VERANDA_INNER_M),
+            _project(view, *(b + out), VERANDA_OUTER_M),
+            _project(view, *(a + out), VERANDA_OUTER_M),
+        ],
+        fill=shade,
+        outline=SLOTS_32["background"],
+    )
+    for t in np.linspace(0.08, 0.92, 4):
+        post = a + (b - a) * t + out
+        draw.line(
+            [_project(view, *post, 0), _project(view, *post, VERANDA_OUTER_M)],
+            fill=SLOTS_32["wall_shade"],
+        )
+
+
 def _paint_flat(draw, view, polygon, height, slot, shade, kind, building_id, seed) -> None:
     ring = np.array(orient(polygon, 1.0).exterior.coords)
     _paint_walls(draw, view, ring, height, None, kind == "shop", kind in ("flat", "shop", "block"))
@@ -577,11 +613,11 @@ def _paint_flat(draw, view, polygon, height, slot, shade, kind, building_id, see
             fill=SLOTS_32["wall_shade"],
             outline=outline,
         )
-    if polygon.area >= 40 and _hash(seed, building_id + "t", 3) == 0:
+    if polygon.area >= WATER_TANK_MIN_M2 and _hash(seed, building_id + "t", 3) < 2:
         center = polygon.representative_point()
         x, y = _project(view, center.x, center.y, height)
-        draw.rectangle([x - 1, y - 4, x + 1, y], fill=SLOTS_32["background"])
-        draw.line([(x - 1, y - 4), (x + 1, y - 4)], fill=SLOTS_32["road_major"])
+        draw.rectangle([x - 2, y - 6, x + 2, y - 1], fill=SLOTS_32["background"])
+        draw.line([(x - 2, y - 6), (x + 2, y - 6)], fill=SLOTS_32["roof_shade_1"])
 
 
 def _ground_axes(polygon):
@@ -1274,7 +1310,9 @@ def _paint_building(draw, view, polygon, height, building_id, seed, style=None) 
         index = 4
     slot = SLOTS_32[f"roof_{index}"]
     shade = SLOTS_32[f"roof_shade_{index}"]
-    if kind in ("house", "shed"):
+    if kind == "house" and area < LOW_HOUSE_MAX_M2:
+        _paint_low_house(draw, view, polygon, height, slot, shade)
+    elif kind in ("house", "shed"):
         _paint_pitched(draw, view, polygon, height, slot, shade, kind == "house", True)
     else:
         _paint_flat(draw, view, polygon, height, slot, shade, kind, building_id, seed)

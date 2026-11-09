@@ -1,7 +1,8 @@
 # Making the map more realistic
 
-Read 2026-11-09. Brajeshwar chose "recognizably Imphal" as the target. The items
-below are not built yet.
+Read 2026-11-09. Brajeshwar chose "recognizably Imphal" as the target, and local
+buildings first: low tin houses with verandas and rooftop tanks are built. The rest
+of item 3 and the other items are not.
 
 ## Do we need real pictures?
 
@@ -54,5 +55,5 @@ know the area flow straight into the next render.
 
 ## Decisions for Brajeshwar
 
-- **Items 2 and 3,** which change the look, once options are rendered.
+- **Item 2, and the rest of item 3,** which change the look, once options are rendered.
 - **Whether you can collect the street photos,** and under which license.

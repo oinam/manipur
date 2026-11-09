@@ -185,6 +185,14 @@ tiles with CORS, since the water layer reads the drawn pixels. Only the versione
 pyramids move; the manifest and indexes stay with the site. Local builds still read
 tiles from `out/`.
 
+## 2026-11-09 — Local buildings
+
+Brajeshwar chose "recognizably Imphal" as the realism target and, from a rendered
+comparison, local buildings ahead of street life. Pitched houses under 160 m² are now
+low tin houses with a veranda on their near long side, and two-thirds of flat roofs of
+at least 25 m² carry a black water tank. Which houses get them comes from the existing
+seeded hash, so they are plausible rather than surveyed.
+
 ## 2026-11-09 — Settings
 
 A gear opens a settings panel. Its first entry, Animation, replaces the water button

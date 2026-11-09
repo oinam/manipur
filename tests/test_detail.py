@@ -5,7 +5,7 @@ import geopandas as gpd
 import numpy as np
 import pytest
 import shapely
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from manipur.areas import get_area
 from manipur.detail import (
@@ -16,6 +16,8 @@ from manipur.detail import (
     STYLE_PAINTERS,
     TRANSPARENT,
     VIEWS,
+    _paint_low_house,
+    _paint_pitched,
     build_scene,
     detail_colors,
     frames_dir,
@@ -93,3 +95,15 @@ def test_views_are_quarter_turns_of_the_chosen_projection():
     a, b, _, _ = view_projection("0").matrix
     next_a, next_b, _, _ = view_projection("90").matrix
     assert (round(next_a, 6), round(next_b, 6)) == (round(-b, 6), round(a, 6))
+
+
+def test_low_house_veranda_reaches_past_the_plain_roof():
+    view = centered_viewport(PROJECTION_B, 0, 0, 200, 200)
+    polygon = shapely.box(-6, -3, 6, 3)
+    background = SLOTS_32["grass"]
+    plain = Image.new("L", (200, 200), background)
+    _paint_pitched(ImageDraw.Draw(plain), view, polygon, 4.4, 1, 2, True, True)
+    with_veranda = Image.new("L", (200, 200), background)
+    _paint_low_house(ImageDraw.Draw(with_veranda), view, polygon, 9.0, 1, 2)
+    plain_area = int((np.asarray(plain) != background).sum())
+    assert int((np.asarray(with_veranda) != background).sum()) > plain_area

@@ -1,4 +1,5 @@
 import OpenSeadragon from "openseadragon";
+import { startWater } from "./water";
 
 interface Place {
   name: string;
@@ -26,6 +27,7 @@ const TILT_NONE_ZOOM = 0.4;
 const viewer = OpenSeadragon({
   element: document.getElementById("map") as HTMLElement,
   prefixUrl: "",
+  drawer: "canvas",
   showNavigationControl: false,
   imageSmoothingEnabled: false,
   maxZoomPixelRatio: 8,
@@ -86,6 +88,7 @@ viewer.addOnceHandler("open", () => {
   viewer.addHandler("animation", updateTilt);
   updateTilt();
   buildLabels();
+  startWater(viewer, document.getElementById("water") as HTMLButtonElement);
 });
 
 window.addEventListener("hashchange", () => {

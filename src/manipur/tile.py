@@ -21,6 +21,7 @@ NOTABLE_KINDS = {"landmark", "university"}
 NOTABLE_NAMES = {"Kangla Palace", "Imphal War Cemetery", "Imphal Indian War Cemetary"}
 TILE_SUFFIX = ".webp[lossless=true,effort=4]"
 PYRAMID_DIR = "pyramid"
+FLOW_SIMPLIFY_M = 6.0
 
 
 def tiles_dir(area: Area) -> Path:
@@ -67,6 +68,24 @@ def search_index(area: Area, x_offset: float, y_offset: float) -> list[dict]:
             "tier": 2,
         }
     return sorted(entries.values(), key=lambda entry: (entry["name"], entry["x"]))
+
+
+def flow_lines(area: Area, x_offset: float, y_offset: float) -> list[dict]:
+    """Return waterways as canvas polylines; OSM draws each one in the downstream direction."""
+    a, b, d, e = PROJECTION.matrix
+    ways = gpd.read_file(derived_path(area), layer="waterways")
+    lines = []
+    for row in ways.itertuples():
+        parts = (
+            row.geometry.geoms if row.geometry.geom_type == "MultiLineString" else [row.geometry]
+        )
+        for part in parts:
+            points = [
+                [round(a * x + b * y + x_offset), round(d * x + e * y + y_offset)]
+                for x, y in part.simplify(FLOW_SIMPLIFY_M).coords
+            ]
+            lines.append({"width": round(row.width_m), "points": points})
+    return lines
 
 
 def _tier(name: str, kind: str) -> int:
@@ -136,5 +155,7 @@ def tile(area: Area) -> None:
     entries = search_index(area, manifest["x_offset"], manifest["y_offset"])
     (target / "search.json").write_text(json.dumps(entries, ensure_ascii=False))
     (target / "credits.json").write_text(json.dumps(landmark_credits(), ensure_ascii=False))
+    flow = flow_lines(area, manifest["x_offset"], manifest["y_offset"])
+    (target / "flow.json").write_text(json.dumps(flow))
     (target / "manifest.json").write_text(json.dumps({**manifest, "pyramid": version}))
     print(f"{pyramid}: {joined.width} x {joined.height}, {len(entries)} search entries")

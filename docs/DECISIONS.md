@@ -139,3 +139,14 @@ citadel walls are two adjoining footprints that fit coarse photo geotags, so the
 are drawn without a label until someone confirms them.
 
 Dome finials are a spike and ball; the earlier crossbar read as a Christian cross.
+
+## 2026-11-09 — Living water
+
+Flowing water is a viewer layer, so it needs no re-render and leaves the tiles
+deterministic. It reads the drawn map to find open water, which keeps it off trees,
+bridges, and windows. Rivers and streams move along OSM's way direction, which is
+downstream by convention; moats and ponds only shimmer. The viewer now uses
+OpenSeadragon's canvas drawer, because the layer has to read its pixels. A map
+control turns the motion off; it starts off under the system's Reduce Motion setting.
+
+Live aircraft are planned in `docs/AIRCRAFT.md`; nothing is built yet.

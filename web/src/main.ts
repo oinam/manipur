@@ -26,6 +26,7 @@ const TILT_NONE_ZOOM = 0.4;
 const SITE_URL = "https://manipur.oinam.com/";
 const NEW_ISSUE_URL = "https://github.com/oinam/manipur/issues/new";
 const NEAR_PLACE_MAX_PX = 800;
+const OPENING_VIEW = { x: 18900, y: 8400, zoom: 0.5 };
 
 function byId<T extends HTMLElement>(id: string, type: new () => T): T {
   const element = document.getElementById(id);
@@ -130,10 +131,8 @@ function showMarker(x: number, y: number): void {
 }
 
 viewer.addOnceHandler("open", () => {
-  const start = readHash();
-  if (start) {
-    goTo(start.x, start.y, start.zoom, true);
-  }
+  const start = readHash() ?? OPENING_VIEW;
+  goTo(start.x, start.y, start.zoom, true);
   viewer.addHandler("animation-finish", writeHash);
   viewer.addHandler("animation-finish", updateLabels);
   viewer.addHandler("animation-finish", updateCorrectionLink);

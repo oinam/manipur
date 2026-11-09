@@ -150,3 +150,9 @@ OpenSeadragon's canvas drawer, because the layer has to read its pixels. A map
 control turns the motion off; it starts off under the system's Reduce Motion setting.
 
 Live aircraft are planned in `docs/AIRCRAFT.md`; nothing is built yet.
+
+## 2026-11-09 — Opening view
+
+The map opens on central Imphal at image zoom 0.5, with Ima Keithel and Kangla both
+in frame, instead of fitting the whole canvas. A URL hash still wins, and the home
+button still shows all of Imphal.

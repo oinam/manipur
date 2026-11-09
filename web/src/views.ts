@@ -13,6 +13,14 @@ export const VIEW_ORDER = Array.from({ length: 24 }, (_, step) => String(step * 
 // Links shared while the map had four named views.
 export const FORMER_VIEWS: Record<string, string> = { nw: "0", sw: "90", se: "180", ne: "270" };
 
+// The view whose screen-up is true north.
+export const NORTH_UP_VIEW = "315";
+
+export function northAngle(view: View): number {
+  const [a, b] = view.matrix;
+  return (Math.atan2(b, a) * 180) / Math.PI;
+}
+
 export function convertPoint(x: number, y: number, from: View, to: View): [number, number] {
   const [a, b, d, e] = from.matrix;
   const screenX = x - from.x_offset;

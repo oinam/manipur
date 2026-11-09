@@ -185,6 +185,12 @@ tiles with CORS, since the water layer reads the drawn pixels. Only the versione
 pyramids move; the manifest and indexes stay with the site. Local builds still read
 tiles from `out/`.
 
+## 2026-11-09 — Compass
+
+A compass control turns the map to view `315`, the one with true north at the top. Its
+needle always points north, using the angle from each view's matrix. It is not the
+opening view; the default stays the one Brajeshwar chose.
+
 ## 2026-11-09 — Local buildings
 
 Brajeshwar chose "recognizably Imphal" as the realism target and, from a rendered

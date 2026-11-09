@@ -1,6 +1,14 @@
 import OpenSeadragon from "openseadragon";
 import { startWater } from "./water";
-import { DEFAULT_VIEW, FORMER_VIEWS, VIEW_ORDER, convertPoint, type View } from "./views";
+import {
+  DEFAULT_VIEW,
+  FORMER_VIEWS,
+  NORTH_UP_VIEW,
+  VIEW_ORDER,
+  convertPoint,
+  northAngle,
+  type View,
+} from "./views";
 
 interface Place {
   name: string;
@@ -128,6 +136,7 @@ function updateCorrectionLink(): void {
 }
 
 const correctionLink = byId("correction", HTMLAnchorElement);
+const needle = byId("needle", HTMLElement);
 let views: Record<string, View> = {};
 let currentView = DEFAULT_VIEW;
 let pendingTarget: Target | null = null;
@@ -172,6 +181,7 @@ function placeLabelsInView(): void {
 function openView(target: Target): void {
   currentView = target.view;
   pendingTarget = target;
+  needle.style.transform = `rotate(${String(northAngle(viewData(target.view)))}deg)`;
   placeLabelsInView();
   // Opening clears the overlays, so the labels and marker are rebuilt or dropped.
   labels.length = 0;
@@ -197,8 +207,11 @@ function holdPicture(): void {
 
 function rotateView(step: number): void {
   const count = VIEW_ORDER.length;
-  const next = VIEW_ORDER[(VIEW_ORDER.indexOf(currentView) + step + count) % count];
-  if (next && viewer.world.getItemCount()) {
+  turnTo(VIEW_ORDER[(VIEW_ORDER.indexOf(currentView) + step + count) % count]);
+}
+
+function turnTo(next: string | undefined): void {
+  if (next && next !== currentView && viewer.world.getItemCount()) {
     const center = viewCenter();
     const [x, y] = convertPoint(center.x, center.y, viewData(currentView), viewData(next));
     holdPicture();
@@ -311,6 +324,9 @@ function bindZoom(id: string, action: () => void): void {
 bindZoom("zoom-in", () => viewer.viewport.zoomBy(1.6).applyConstraints());
 bindZoom("zoom-out", () => viewer.viewport.zoomBy(1 / 1.6).applyConstraints());
 bindZoom("home", () => viewer.viewport.goHome());
+bindZoom("compass", () => {
+  turnTo(NORTH_UP_VIEW);
+});
 byId("rotate", HTMLButtonElement).addEventListener("click", (event) => {
   rotateView(event.altKey ? -1 : 1);
 });

@@ -120,3 +120,11 @@ are a regular grid, not surveyed.
 
 Labels are viewer overlays rather than pixels in the tiles, so changing script
 later needs no re-render. Tilt-shift is a CSS blur that appears when zoomed out.
+
+## 2026-11-09 — Versioned tiles
+
+The pyramid lives at `tiles/pyramid/<hash>/`, where the hash covers the frame bytes
+and tile settings, and is cached as immutable. `tiles/manifest.json` names the
+current hash and is revalidated on every load, as are the pages and the search and
+credits files. A re-render therefore gets new tile URLs, and no visitor can see old
+and new tiles mixed.

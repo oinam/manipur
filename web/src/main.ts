@@ -13,7 +13,7 @@ interface Label {
   element: HTMLElement;
 }
 
-const TILES = "tiles/imphal.dzi";
+const MANIFEST = "tiles/manifest.json";
 const SEARCH_INDEX = "tiles/search.json";
 const MAX_RESULTS = 12;
 const FLY_TO_IMAGE_ZOOM = 1.5;
@@ -25,7 +25,6 @@ const TILT_NONE_ZOOM = 0.4;
 
 const viewer = OpenSeadragon({
   element: document.getElementById("map") as HTMLElement,
-  tileSources: TILES,
   prefixUrl: "",
   showNavigationControl: false,
   imageSmoothingEnabled: false,
@@ -170,6 +169,15 @@ bindZoom("home", () => viewer.viewport.goHome());
 const input = document.getElementById("search") as HTMLInputElement;
 const results = document.getElementById("results") as HTMLUListElement;
 let places: Place[] = [];
+
+fetch(MANIFEST)
+  .then((response) => response.json())
+  .then((manifest: { pyramid: string }) => {
+    viewer.open(`tiles/pyramid/${manifest.pyramid}/imphal.dzi`);
+  })
+  .catch((error: unknown) => {
+    console.error("Tile manifest failed to load", error);
+  });
 
 fetch(SEARCH_INDEX)
   .then((response) => response.json())

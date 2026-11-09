@@ -1,5 +1,6 @@
 """Stage 4: join the frames into a Deep Zoom pyramid and write the search index."""
 
+import hashlib
 import json
 import shutil
 from pathlib import Path
@@ -19,10 +20,19 @@ LOCALITY_KINDS = {"village", "neighbourhood", "locality", "quarter", "hamlet"}
 NOTABLE_KINDS = {"landmark", "university"}
 NOTABLE_NAMES = {"Kangla Palace", "Imphal War Cemetery", "Imphal Indian War Cemetary"}
 TILE_SUFFIX = ".webp[lossless=true,effort=4]"
+PYRAMID_DIR = "pyramid"
 
 
 def tiles_dir(area: Area) -> Path:
     return Path("out") / area.name / "tiles"
+
+
+def pyramid_version(paths: list[Path], columns: int) -> str:
+    """Return a short hash of everything that decides the tile bytes."""
+    digest = hashlib.blake2b(f"{TILE_PX}:{TILE_SUFFIX}:{columns}".encode(), digest_size=5)
+    for path in paths:
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
 
 
 def search_index(area: Area, x_offset: float, y_offset: float) -> list[dict]:
@@ -112,9 +122,11 @@ def tile(area: Area) -> None:
     target = tiles_dir(area)
     if target.exists():
         shutil.rmtree(target)
-    target.mkdir(parents=True)
+    version = pyramid_version(paths, columns)
+    pyramid = target / PYRAMID_DIR / version
+    pyramid.mkdir(parents=True)
     joined.dzsave(
-        str(target / area.name),
+        str(pyramid / area.name),
         tile_size=TILE_PX,
         overlap=0,
         suffix=TILE_SUFFIX,
@@ -124,5 +136,5 @@ def tile(area: Area) -> None:
     entries = search_index(area, manifest["x_offset"], manifest["y_offset"])
     (target / "search.json").write_text(json.dumps(entries, ensure_ascii=False))
     (target / "credits.json").write_text(json.dumps(landmark_credits(), ensure_ascii=False))
-    shutil.copy(manifest_path(area), target / "manifest.json")
-    print(f"{target}: {joined.width} x {joined.height}, {len(entries)} search entries")
+    (target / "manifest.json").write_text(json.dumps({**manifest, "pyramid": version}))
+    print(f"{pyramid}: {joined.width} x {joined.height}, {len(entries)} search entries")

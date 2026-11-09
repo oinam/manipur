@@ -34,7 +34,9 @@ Notes on how each of these was made are in `docs/RESEARCH.md`.
 
 ## Status
 
-Phase 1 (Imphal v1) is live at https://manipur.oinam.com: the full municipal bbox, a zoomable viewer, search, and shareable URLs. Phase 2 (landmarks and polish) is in progress. Phase 0 closed with projection B, 0.5 m/px, and the monsoon palette; see `docs/DECISIONS.md`.
+Phase 1 (Imphal v1) is live at https://manipur.oinam.com: the full municipal bbox, a zoomable viewer, search, and shareable URLs. Phase 0 closed with projection B, 0.5 m/px, and the monsoon palette; see `docs/DECISIONS.md`.
+
+Phase 2 (landmarks and polish) is in progress: drawn landmarks, zoom-aware labels, flowing rivers, and a credits page. Corrections are welcome; see `CONTRIBUTING.md`.
 
 ## Layout
 
@@ -45,7 +47,7 @@ tools/       one-off helpers, palette tools
 data/raw/    downloaded sources (gitignored)
 data/derived/ clipped, reprojected, cached (gitignored)
 out/         rendered frames and tile pyramids (gitignored)
-web/         OpenSeadragon viewer (created in Phase 1)
+web/         OpenSeadragon viewer
 ```
 
 ## Licence

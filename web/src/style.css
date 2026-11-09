@@ -219,7 +219,8 @@ button:focus-visible,
   pointer-events: none;
 }
 
-.water {
+.water,
+.still {
   position: absolute;
   inset: 0;
   width: 100%;

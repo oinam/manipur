@@ -1,6 +1,7 @@
 # Making the map more realistic
 
-Read 2026-11-09. This is a proposal; nothing here is decided or built.
+Read 2026-11-09. Brajeshwar chose "recognizably Imphal" as the target. The items
+below are not built yet.
 
 ## Do we need real pictures?
 
@@ -53,7 +54,5 @@ know the area flow straight into the next render.
 
 ## Decisions for Brajeshwar
 
-- **What "realistic" means here:** recognizably Imphal (the list above), or
-  photographic (the parked route, and not recommended).
 - **Items 2 and 3,** which change the look, once options are rendered.
 - **Whether you can collect the street photos,** and under which license.

@@ -46,9 +46,9 @@ from manipur.render import (
 CROP_CENTER = (93.93759, 24.80343)
 CROP_PX = 900
 PROJECTION = PROJECTION_B
-# The chosen projection seen from four sides, named for the direction the viewer faces.
-VIEWS = {"nw": 45.0, "sw": 135.0, "se": 225.0, "ne": 315.0}
-DEFAULT_VIEW = "nw"
+# The chosen projection turned in 15 degree steps, named for the turn from the default.
+VIEWS = {str(turn): (45.0 + turn) % 360 for turn in range(0, 360, 15)}
+DEFAULT_VIEW = "0"
 SPRITE_DIR = Path("assets/sprites")
 LANDMARKS_PATH = Path("assets/landmarks.json")
 TRANSPARENT = 255

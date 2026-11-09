@@ -15,6 +15,7 @@ from manipur.detail import (
     SLOTS_32,
     STYLE_PAINTERS,
     TRANSPARENT,
+    VIEWS,
     build_scene,
     detail_colors,
     frames_dir,
@@ -81,13 +82,14 @@ def test_adjacent_frames_join_without_a_seam():
 def test_default_view_keeps_its_paths():
     area = get_area("imphal")
     assert frames_dir(area).name == "frames"
-    assert frames_dir(area, "sw").name == "frames-sw"
+    assert frames_dir(area, "90").name == "frames-90"
     assert manifest_path(area).name == "manifest.json"
-    assert manifest_path(area, "ne").name == "manifest-ne.json"
+    assert manifest_path(area, "270").name == "manifest-270.json"
 
 
 def test_views_are_quarter_turns_of_the_chosen_projection():
     assert view_projection(DEFAULT_VIEW) == PROJECTION_B
-    a, b, _, _ = view_projection("nw").matrix
-    next_a, next_b, _, _ = view_projection("sw").matrix
+    assert len(VIEWS) == 24
+    a, b, _, _ = view_projection("0").matrix
+    next_a, next_b, _, _ = view_projection("90").matrix
     assert (round(next_a, 6), round(next_b, 6)) == (round(-b, 6), round(a, 6))

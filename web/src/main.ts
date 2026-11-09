@@ -1,6 +1,6 @@
 import OpenSeadragon from "openseadragon";
 import { startWater } from "./water";
-import { DEFAULT_VIEW, VIEW_ORDER, convertPoint, type View } from "./views";
+import { DEFAULT_VIEW, FORMER_VIEWS, VIEW_ORDER, convertPoint, type View } from "./views";
 
 interface Place {
   name: string;
@@ -23,6 +23,8 @@ interface Label {
 }
 
 const MANIFEST = "tiles/manifest.json";
+const TILE_BASE = (import.meta.env.VITE_TILE_BASE as string | undefined) ?? "tiles/";
+const STILL_MAX_MS = 4000;
 const SEARCH_INDEX = "tiles/search.json";
 const MAX_RESULTS = 12;
 const FLY_TO_IMAGE_ZOOM = 1.5;
@@ -47,6 +49,7 @@ function byId<T extends HTMLElement>(id: string, type: new () => T): T {
 const viewer = OpenSeadragon({
   element: byId("map", HTMLElement),
   prefixUrl: "",
+  crossOriginPolicy: "Anonymous",
   drawer: "canvas",
   showNavigationControl: false,
   imageSmoothingEnabled: false,
@@ -65,7 +68,7 @@ function imageZoomToViewport(zoom: number): number {
 function readHash(): Target | null {
   const parts = location.hash.slice(1).split("/");
   const [zoom = NaN, x = NaN, y = NaN] = parts.slice(0, 3).map(Number);
-  const view = parts[3] ?? DEFAULT_VIEW;
+  const view = FORMER_VIEWS[parts[3] ?? ""] ?? parts[3] ?? DEFAULT_VIEW;
   if (parts.length < 3 || parts.length > 4 || ![zoom, x, y].every(Number.isFinite)) {
     return null;
   }
@@ -128,6 +131,7 @@ const correctionLink = byId("correction", HTMLAnchorElement);
 let views: Record<string, View> = {};
 let currentView = DEFAULT_VIEW;
 let pendingTarget: Target | null = null;
+let still: HTMLCanvasElement | null = null;
 let water: ReturnType<typeof startWater> | null = null;
 let marker: HTMLElement | null = null;
 
@@ -172,7 +176,23 @@ function openView(target: Target): void {
   // Opening clears the overlays, so the labels and marker are rebuilt or dropped.
   labels.length = 0;
   marker = null;
-  viewer.open(`tiles/pyramid/${viewData(target.view).pyramid}/imphal.dzi`);
+  viewer.open(`${TILE_BASE}pyramid/${viewData(target.view).pyramid}/imphal.dzi`);
+}
+
+// Keeps the last frame on screen until the next view's tiles arrive.
+function holdPicture(): void {
+  const source = (viewer.drawer as unknown as { canvas: HTMLCanvasElement }).canvas;
+  still?.remove();
+  const picture = document.createElement("canvas");
+  picture.className = "still";
+  picture.width = source.width;
+  picture.height = source.height;
+  picture.getContext("2d")?.drawImage(source, 0, 0);
+  source.after(picture);
+  still = picture;
+  window.setTimeout(() => {
+    picture.remove();
+  }, STILL_MAX_MS);
 }
 
 function rotateView(step: number): void {
@@ -181,6 +201,7 @@ function rotateView(step: number): void {
   if (next && viewer.world.getItemCount()) {
     const center = viewCenter();
     const [x, y] = convertPoint(center.x, center.y, viewData(currentView), viewData(next));
+    holdPicture();
     openView({ x, y, zoom: imageZoom(), view: next });
   }
 }
@@ -190,6 +211,9 @@ viewer.addHandler("open", () => {
     goTo(pendingTarget.x, pendingTarget.y, pendingTarget.zoom, true);
     pendingTarget = null;
   }
+  viewer.world.getItemAt(0).addOnceHandler("fully-loaded-change", () => {
+    still?.remove();
+  });
   updateTilt();
   buildLabels();
   updateCorrectionLink();

@@ -160,12 +160,30 @@ button still shows all of Imphal.
 ## 2026-11-09 — Four viewing directions
 
 The map can be seen from four sides: the chosen 2:1 projection at quarter turns,
-named `nw` (the default), `sw`, `se`, and `ne` for the way the viewer faces. Each is a
+later narrowed to 15 degree steps (below). Each is a
 full render and its own pyramid, because the art is pre-drawn; free rotation would need
 a different renderer. The default view's frames are unchanged. Search and flow stay in
 default-view coordinates, and the viewer converts them through the ground plane using
 each view's matrix from the manifest. Non-default views add a fourth hash segment, so
 older links still open as they did.
+
+## 2026-11-09 — Fifteen degree turns
+
+Brajeshwar asked for 15 degree steps, so the four views become 24, named for the turn
+from the default (`0`, `15`, ... `345`). Links using the earlier `sw`, `se`, and `ne`
+names still open. Alt or Option reverses the turn. While a new view loads, the last
+frame stays on screen.
+
+## 2026-11-09 — Tiles on R2
+
+Twenty-four pyramids need about 68,000 files, over the free Workers limit of 20,000.
+Brajeshwar chose R2 (bucket `manipur-tiles`), which fits in its free 10 GB. The bucket
+is served directly from its own domain, `manipur-tiles.oinam.com`, so tile requests do
+not count against Workers' daily free requests. That domain is one level under
+`oinam.com` because Universal SSL does not cover deeper names. The viewer asks for
+tiles with CORS, since the water layer reads the drawn pixels. Only the versioned
+pyramids move; the manifest and indexes stay with the site. Local builds still read
+tiles from `out/`.
 
 ## 2026-11-09 — Settings
 

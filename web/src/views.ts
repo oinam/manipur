@@ -5,10 +5,13 @@ export interface View {
   y_offset: number;
 }
 
-export const DEFAULT_VIEW = "nw";
+export const DEFAULT_VIEW = "0";
 
 // Each step turns the scene clockwise on screen.
-export const VIEW_ORDER = [DEFAULT_VIEW, "sw", "se", "ne"];
+export const VIEW_ORDER = Array.from({ length: 24 }, (_, step) => String(step * 15));
+
+// Links shared while the map had four named views.
+export const FORMER_VIEWS: Record<string, string> = { nw: "0", sw: "90", se: "180", ne: "270" };
 
 export function convertPoint(x: number, y: number, from: View, to: View): [number, number] {
   const [a, b, d, e] = from.matrix;

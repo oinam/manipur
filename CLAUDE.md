@@ -69,7 +69,7 @@ Add `make`/`just` targets as they appear and keep this list current.
 
 ## Git
 
-Branch per phase (`phase-0-feasibility`, `phase-1-imphal`, ...). Commit often,
+Work directly on `main`; no phase branches, no merging. Commit often,
 small, with messages that say what changed in the picture. Never force-push.
 Do not push unless asked. Remote: `git@github.com:oinam/manipur.git`.
 

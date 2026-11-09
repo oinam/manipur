@@ -126,6 +126,11 @@ button:focus-visible,
   color: var(--muted);
 }
 
+.credits .correction {
+  display: block;
+  padding-bottom: 4px;
+}
+
 .credits p,
 .credits ul {
   margin: 8px 0;

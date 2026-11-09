@@ -23,6 +23,9 @@ const LABEL_CHAR_PX = 7;
 const LABEL_HEIGHT_PX = 20;
 const TILT_FULL_ZOOM = 0.1;
 const TILT_NONE_ZOOM = 0.4;
+const SITE_URL = "https://manipur.oinam.com/";
+const NEW_ISSUE_URL = "https://github.com/oinam/manipur/issues/new";
+const NEAR_PLACE_MAX_PX = 800;
 
 const viewer = OpenSeadragon({
   element: document.getElementById("map") as HTMLElement,
@@ -56,13 +59,52 @@ function goTo(x: number, y: number, imageZoom: number, immediately: boolean): vo
   viewer.viewport.zoomTo(imageZoomToViewport(imageZoom), undefined, immediately);
 }
 
-function writeHash(): void {
-  const center = viewer.viewport.viewportToImageCoordinates(viewer.viewport.getCenter());
-  const zoom = viewer.viewport.viewportToImageZoom(viewer.viewport.getZoom());
-  const hash = `#${zoom.toFixed(3)}/${Math.round(center.x)}/${Math.round(center.y)}`;
-  history.replaceState(null, "", hash);
+function viewCenter(): OpenSeadragon.Point {
+  return viewer.viewport.viewportToImageCoordinates(viewer.viewport.getCenter());
 }
 
+function viewHash(): string {
+  const center = viewCenter();
+  const zoom = viewer.viewport.viewportToImageZoom(viewer.viewport.getZoom());
+  return `#${zoom.toFixed(3)}/${Math.round(center.x)}/${Math.round(center.y)}`;
+}
+
+function writeHash(): void {
+  history.replaceState(null, "", viewHash());
+}
+
+function nearestPlace(): string | null {
+  const center = viewCenter();
+  let nearest: string | null = null;
+  let best = NEAR_PLACE_MAX_PX;
+  for (const place of places) {
+    const distance = Math.hypot(place.x - center.x, place.y - center.y);
+    if (distance < best) {
+      best = distance;
+      nearest = place.name;
+    }
+  }
+  return nearest;
+}
+
+function updateCorrectionLink(): void {
+  const near = nearestPlace();
+  const title = near ? `Correction near ${near}` : "Map correction";
+  const body = [
+    `**Map view:** ${SITE_URL}${viewHash()}`,
+    "",
+    "**What is wrong or missing?**",
+    "",
+    "",
+    "**How do you know?** (For example, you live nearby, or a public document says so.)",
+    "",
+    "",
+    "Please don't copy details from Google Maps or other proprietary maps; their licenses don't allow it.",
+  ].join("\n");
+  correctionLink.href = `${NEW_ISSUE_URL}?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+}
+
+const correctionLink = document.getElementById("correction") as HTMLAnchorElement;
 let marker: HTMLElement | null = null;
 
 function showMarker(x: number, y: number): void {
@@ -85,9 +127,11 @@ viewer.addOnceHandler("open", () => {
   }
   viewer.addHandler("animation-finish", writeHash);
   viewer.addHandler("animation-finish", updateLabels);
+  viewer.addHandler("animation-finish", updateCorrectionLink);
   viewer.addHandler("animation", updateTilt);
   updateTilt();
   buildLabels();
+  updateCorrectionLink();
   startWater(viewer, document.getElementById("water") as HTMLButtonElement);
 });
 
@@ -188,6 +232,9 @@ fetch(SEARCH_INDEX, { cache: "no-cache" })
   .then((entries: Place[]) => {
     places = entries;
     buildLabels();
+    if (viewer.world.getItemCount()) {
+      updateCorrectionLink();
+    }
   })
   .catch((error: unknown) => {
     console.error("Search index failed to load", error);

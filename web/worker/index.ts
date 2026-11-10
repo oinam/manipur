@@ -19,6 +19,7 @@ interface Snapshot {
 interface Secrets {
   OPENSKY_CLIENT_ID: string;
   OPENSKY_CLIENT_SECRET: string;
+  AIRCRAFT_FEED?: string; // "on" only from `mise run api`, until OpenSky licenses public use
 }
 
 type Bindings = Env & Secrets;
@@ -155,6 +156,11 @@ export default {
     const url = new URL(request.url);
     if (url.pathname !== "/api/aircraft") {
       return env.ASSETS.fetch(request);
+    }
+    // OpenSky's terms allow research use only until it grants a written license, so the
+    // feed answers only where AIRCRAFT_FEED is on: the local command, never the deployed site.
+    if (env.AIRCRAFT_FEED !== "on") {
+      return new Response("Not found", { status: 404 });
     }
     const cache = caches.default;
     const cached = await cache.match(request);

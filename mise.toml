@@ -73,7 +73,7 @@ run = ".venv/bin/python -m http.server 8643 --bind 127.0.0.1 --directory web/dis
 
 [tasks.api]
 description = "Run the aircraft Worker locally on port 8790, with secrets from .env"
-run = "pnpm --dir web exec wrangler dev --env-file ../.env --port 8790 --ip 127.0.0.1"
+run = "pnpm --dir web exec wrangler dev --env-file ../.env --var AIRCRAFT_FEED:on --port 8790 --ip 127.0.0.1"
 
 [tasks.preview]
 description = "Build the viewer and serve it on port 8644, passing /api to the local Worker"

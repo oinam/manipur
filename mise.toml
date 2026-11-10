@@ -63,7 +63,7 @@ description = "Build the viewer into web/dist"
 run = "pnpm --dir web build"
 
 [tasks.dev]
-description = "Run the viewer's Vite dev server"
+description = "Run the viewer's dev server on port 8645 with local tiles; planes need `mise run api` too"
 run = "pnpm --dir web dev"
 
 [tasks.serve]

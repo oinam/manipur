@@ -64,6 +64,7 @@ uv run python tools/draw_sprites.py      # redraws the landmark sprites in asset
 uv run manipur frames --area imphal      # renders all 24 views as seamless 2048 px frames
 uv run manipur tile   --area imphal      # builds each view's Deep Zoom pyramid and the search index
 pnpm --dir web install && pnpm --dir web build   # builds the viewer into web/dist
+mise run dev                             # live-reloading viewer with local tiles: http://localhost:8645
 uv run python tools/upload_tiles.py      # uploads new tile pyramids, then their index files, to R2
 mise run live                            # local aircraft Worker and viewer: http://localhost:8644/?aircraft=live
 mise run relay                           # feeds live planes to the site from this Mac until stopped

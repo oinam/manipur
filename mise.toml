@@ -75,6 +75,10 @@ run = ".venv/bin/python -m http.server 8643 --bind 127.0.0.1 --directory web/dis
 description = "Upload new tile pyramids to R2"
 run = "uv run python tools/upload_tiles.py"
 
+[tasks.log-aircraft]
+description = "Log aircraft near Imphal airport to data/raw/aircraft/ until stopped"
+run = "caffeinate -i uv run python tools/log_aircraft.py"
+
 [tasks.deploy]
 description = "Publish to manipur.oinam.com"
 run = "pnpm --dir web run deploy"

@@ -211,3 +211,10 @@ Brajeshwar decided that live aircraft, if built, show only scheduled airline fli
 and run two minutes behind. Military, government, and unidentified aircraft are
 dropped on the server. How each works is in `docs/AIRCRAFT.md`. Nothing is built
 until OpenSky's terms are read and its row is in `docs/DATA.md`.
+
+## 2026-11-10 — mise
+
+Brajeshwar asked for mise. `mise.toml` pins uv, Node, and pnpm to the versions
+already in use, loads `.env` for secrets such as the OpenSky client, and names the
+project's commands as tasks. uv and pnpm still install the packages, and CI is
+unchanged.

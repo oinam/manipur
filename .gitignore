@@ -22,6 +22,11 @@ node_modules/
 web/dist/
 .wrangler/
 
+# secrets
+.env
+.dev.vars
+mise.local.toml
+
 # os / editors
 .DS_Store
 .claude/settings.local.json

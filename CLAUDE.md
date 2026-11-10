@@ -46,7 +46,13 @@ decision says so. No GPU required for Phases 0 to 3.
 
 ## Commands
 
+mise pins uv, Node, and pnpm, loads secrets from `.env` (copy `.env.example`; git
+ignores it), and runs each command below as a task: `mise tasks` lists them, and
+`mise run <task> [area]` runs one, for example `mise run frames` or
+`mise run plan kangla`. Never print or commit the values in `.env`.
+
 ```
+mise install && mise run setup           # installs the pinned tools, then both environments
 uv sync                                  # installs the pinned Python 3.12 environment
 uv run manipur fetch  --area kangla      # downloads into data/raw/<area>/
 uv run manipur plan   --area kangla      # writes a top-down check to out/<area>/

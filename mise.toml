@@ -1,0 +1,92 @@
+# Tool versions, local secrets, and the project's commands. uv and pnpm still
+# install the packages; mise only picks their versions and runs the tasks.
+
+[tools]
+uv = "0.9.18"
+node = "22"
+pnpm = "12.8.1"
+
+[env]
+# Secrets live in .env, which git ignores; .env.example lists the names.
+_.file = { path = ".env", redact = true }
+
+[tasks.setup]
+description = "Install the Python environment and the viewer's packages"
+run = ["uv sync", "pnpm --dir web install"]
+
+[tasks.fetch]
+description = "Download an area's sources into data/raw/<area>/"
+usage = 'arg "[area]" default="imphal"'
+run = "uv run manipur fetch --area ${usage_area}"
+
+[tasks.plan]
+description = "Write a top-down check to out/<area>/"
+usage = 'arg "[area]" default="imphal"'
+run = "uv run manipur plan --area ${usage_area}"
+
+[tasks.prepare]
+description = "Write data/derived/<area>.gpkg and its stats"
+usage = 'arg "[area]" default="imphal"'
+run = "uv run manipur prepare --area ${usage_area}"
+
+[tasks.render]
+description = "Write frame and full renders to out/<area>/"
+usage = 'arg "[area]" default="imphal"'
+run = "uv run manipur render --area ${usage_area}"
+
+[tasks.swatches]
+description = "Write the candidate palette sheet to out/<area>/"
+usage = 'arg "[area]" default="imphal"'
+run = "uv run manipur swatches --area ${usage_area}"
+
+[tasks.detail]
+description = "Write the near-final 900 px crop to out/<area>/"
+usage = 'arg "[area]" default="kangla-sw"'
+run = "uv run manipur detail --area ${usage_area}"
+
+[tasks.sprites]
+description = "Redraw the landmark sprites in assets/sprites/"
+run = "uv run python tools/draw_sprites.py"
+
+[tasks.frames]
+description = "Render all 24 views as seamless 2048 px frames"
+usage = 'arg "[area]" default="imphal"'
+run = "uv run manipur frames --area ${usage_area}"
+
+[tasks.tile]
+description = "Build each view's Deep Zoom pyramid and the search index"
+usage = 'arg "[area]" default="imphal"'
+run = "uv run manipur tile --area ${usage_area}"
+
+[tasks.build]
+description = "Build the viewer into web/dist"
+run = "pnpm --dir web build"
+
+[tasks.dev]
+description = "Run the viewer's Vite dev server"
+run = "pnpm --dir web dev"
+
+[tasks.serve]
+description = "Build the viewer and serve it with local tiles on port 8643"
+depends = ["build"]
+run = ".venv/bin/python -m http.server 8643 --bind 127.0.0.1 --directory web/dist"
+
+[tasks.upload]
+description = "Upload new tile pyramids to R2"
+run = "uv run python tools/upload_tiles.py"
+
+[tasks.deploy]
+description = "Publish to manipur.oinam.com"
+run = "pnpm --dir web run deploy"
+
+[tasks.test]
+description = "Run the tests"
+run = "uv run pytest"
+
+[tasks.lint]
+description = "Lint and check formatting for Python and the viewer"
+run = ["uv run ruff check .", "uv run ruff format --check .", "pnpm --dir web run lint"]
+
+[tasks.format]
+description = "Format Python and the viewer"
+run = ["uv run ruff format .", "pnpm --dir web run format"]

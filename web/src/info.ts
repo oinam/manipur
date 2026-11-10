@@ -38,6 +38,8 @@ const DATE = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
   year: "numeric",
 });
+// A flight this close to its time is about to land or leave, or just has.
+const NEAR_MS = 10 * 60_000;
 // A status this long past the scheduled time is likely stale, so it is not shown.
 const STALE_STATUS_MS = 3_600_000;
 const SEEN_MARK = "✓";
@@ -116,7 +118,12 @@ function statusOf(flight: Scheduled, now: number): string {
   return now - flight.time < STALE_STATUS_MS ? flight.status : "";
 }
 
-function renderSchedule(container: HTMLElement, schedule: Schedule, seen: Set<string>): void {
+function renderSchedule(
+  container: HTMLElement,
+  schedule: Schedule,
+  seen: Set<string>,
+  focus: (callsign?: string) => void,
+): void {
   const now = Date.now();
   const rows = (flights: Scheduled[], preposition: string) =>
     flights.map((flight) => {
@@ -127,7 +134,24 @@ function renderSchedule(container: HTMLElement, schedule: Schedule, seen: Set<st
         [statusOf(flight, now), "kind"],
         [flight.callsign && seen.has(flight.callsign) ? SEEN_MARK : "", "seen"],
       );
-      item.classList.toggle("past", isPast(flight, now));
+      const near = Math.abs((flight.revised ?? flight.time) - now) <= NEAR_MS;
+      item.classList.toggle("past", isPast(flight, now) && !near);
+      if (near) {
+        item.classList.add("near");
+        item.tabIndex = 0;
+        item.setAttribute("role", "button");
+        item.title = "Show on the map";
+        const show = () => {
+          focus(flight.callsign);
+        };
+        item.addEventListener("click", show);
+        item.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            show();
+          }
+        });
+      }
       return item;
     });
   container.replaceChildren(
@@ -147,7 +171,7 @@ function renderSightings(container: HTMLElement, flights: Flight[]): void {
   );
 }
 
-export function startInfo(): void {
+export function startInfo(focus: (callsign?: string) => void): void {
   const toggle = element("planes", HTMLButtonElement);
   const panel = element("info", HTMLElement);
   const flights = element("flights", HTMLDivElement);
@@ -177,7 +201,7 @@ export function startInfo(): void {
         schedule?: Schedule;
       };
       if (schedule && schedule.arrivals.length + schedule.departures.length > 0) {
-        renderSchedule(flights, schedule, new Set(today.map((flight) => flight.callsign)));
+        renderSchedule(flights, schedule, new Set(today.map((flight) => flight.callsign)), focus);
         note.textContent = SCHEDULE_NOTE;
       } else {
         renderSightings(flights, today);

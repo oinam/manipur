@@ -192,6 +192,17 @@ button:focus-visible,
   opacity: 0.45;
 }
 
+#flights li.near {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#flights li.near:hover,
+#flights li.near:focus-visible {
+  background: var(--line);
+  outline: none;
+}
+
 #flights .seen {
   color: #8db9cd;
   text-align: right;

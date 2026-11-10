@@ -1,5 +1,5 @@
 import OpenSeadragon from "openseadragon";
-import { startAircraft } from "./aircraft";
+import { startAircraft, toImage, type AircraftLayer } from "./aircraft";
 import { startInfo } from "./info";
 import { liveFeed } from "./live";
 import { simulatedArrival } from "./simulation";
@@ -55,6 +55,11 @@ const NEAR_PLACE_MAX_PX = 800;
 const OPENING_VIEW: Target = { x: 18900, y: 8400, zoom: 0.5, view: DEFAULT_VIEW };
 // The demo opens on the final approach to runway 22, where the simulated plane flies.
 const DEMO_OPENING_VIEW: Target = { x: 8800, y: 8700, zoom: 0.35, view: DEFAULT_VIEW };
+// The middle of runway 04/22 (OSM way 44884414), where the panel looks for a plane it
+// cannot find in the live feed.
+const RUNWAY_MIDDLE = { lon: 93.8972, lat: 24.7596 };
+const AIRPORT_ZOOM = 0.35;
+const PLANE_ZOOM = 0.6;
 
 function byId<T extends HTMLElement>(id: string, type: new () => T): T {
   const element = document.getElementById(id);
@@ -153,6 +158,15 @@ let pendingTarget: Target | null = null;
 let still: HTMLCanvasElement | null = null;
 let water: ReturnType<typeof startWater> | null = null;
 let marker: HTMLElement | null = null;
+let aircraft: AircraftLayer | null = null;
+
+// Brings a flight from the airplanes panel into view: the plane if the live feed has it,
+// otherwise the runway it is about to use.
+function focusFlight(callsign?: string): void {
+  const plane = callsign ? aircraft?.locate(callsign) : null;
+  const [x, y] = plane ?? toImage(viewData(currentView), RUNWAY_MIDDLE.lon, RUNWAY_MIDDLE.lat);
+  goTo(x, y, plane ? PLANE_ZOOM : AIRPORT_ZOOM, false);
+}
 
 function showMarker(x: number, y: number): void {
   if (marker) {
@@ -247,9 +261,9 @@ viewer.addHandler("open", () => {
     water = startWater(viewer, byId("animation", HTMLInputElement), toCurrentView);
     if (AIRCRAFT_MODE !== "off") {
       const feed = AIRCRAFT_DEMO ? simulatedArrival : liveFeed;
-      startAircraft(viewer, () => viewData(currentView), feed);
+      aircraft = startAircraft(viewer, () => viewData(currentView), feed);
     }
-    startInfo();
+    startInfo(focusFlight);
     viewer.addHandler("animation-finish", writeHash);
     viewer.addHandler("animation-finish", updateLabels);
     viewer.addHandler("animation-finish", updateCorrectionLink);

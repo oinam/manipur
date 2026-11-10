@@ -24,6 +24,11 @@ export interface Feed {
 
 type Point = [number, number];
 
+// Finds a plane on the map, for the airplanes panel.
+export interface AircraftLayer {
+  locate(callsign: string): Point | null;
+}
+
 const DELAY_MS = 120_000;
 const RELOAD_MS = 5_000;
 const LIFT = Math.sqrt(3); // screen pixels per meter of height, as the buildings use
@@ -71,6 +76,13 @@ const FIN_SHAPE: Point[] = [
   [-16, 11.8],
 ]; // (forward, up) along the centerline
 
+// A longitude and latitude, lifted by a height in meters, to a view's image pixels.
+export function toImage(view: View, lon: number, lat: number, height = 0): Point {
+  const [x, y] = toUtm(lon, lat);
+  const [a, b, d, e] = view.matrix;
+  return [a * x + b * y + view.x_offset, d * x + e * y + view.y_offset - height * LIFT];
+}
+
 function mirror(points: Point[]): Point[] {
   return points.map(([forward, right]) => [forward, -right]);
 }
@@ -105,14 +117,14 @@ export function startAircraft(
   viewer: OpenSeadragon.Viewer,
   currentView: () => View,
   feed: Feed,
-): void {
+): AircraftLayer | null {
   const source = (viewer.drawer as unknown as { canvas: HTMLCanvasElement }).canvas;
   const canvas = document.createElement("canvas");
   canvas.className = "aircraft";
   source.after(canvas);
   const context = canvas.getContext("2d");
   if (!context) {
-    return;
+    return null;
   }
   const draw2d = context;
   let pair: [Snapshot, Snapshot] | null = null;
@@ -235,4 +247,14 @@ export function startAircraft(
   reload();
   window.setInterval(reload, RELOAD_MS);
   requestAnimationFrame(draw);
+  return {
+    locate(callsign) {
+      const plane = pair
+        ? between(pair[0], pair[1], Date.now() - DELAY_MS).find(
+            (each) => each.callsign === callsign,
+          )
+        : undefined;
+      return plane ? toImage(currentView(), plane.lon, plane.lat, plane.altitude) : null;
+    },
+  };
 }

@@ -319,3 +319,14 @@ Animation now starts on even when the system asks for reduced motion, and the sw
 in Settings remembers a visitor's choice under a new key, so earlier choices start
 over. Planes never read the switch. The home button goes to the opening view, in the
 current direction, instead of fitting all of Imphal, which was too small to read.
+
+## 2026-11-10 — A top-down check of the whole state
+
+Before Phase 3 puts terrain into the isometric renderer, `manipur overview --area manipur`
+draws the state top-down at 100 m/px. WorldCover classes are mapped to the `monsoon`
+palette's ground colors, and they're shaded in six flat bands from the Copernicus DEM,
+lit from the northwest. The OSM state and district lines, rivers, and towns come from
+the cached Geofabrik extract. Outside the state is faded toward paper. Land cover and
+elevation are read at about 60 m into `data/raw/manipur/`, not at full resolution, so
+the fetch stays small. This is a check render, not the coarse layer for Phase 4; how
+that layer looks is Brajeshwar's call.

@@ -1,5 +1,6 @@
 import OpenSeadragon from "openseadragon";
 import { startAircraft } from "./aircraft";
+import { startInfo } from "./info";
 import { liveFeed } from "./live";
 import { simulatedArrival } from "./simulation";
 import { TILE_BASE } from "./tiles";
@@ -248,6 +249,7 @@ viewer.addHandler("open", () => {
       const feed = AIRCRAFT_DEMO ? simulatedArrival : liveFeed;
       startAircraft(viewer, () => viewData(currentView), feed);
     }
+    startInfo();
     viewer.addHandler("animation-finish", writeHash);
     viewer.addHandler("animation-finish", updateLabels);
     viewer.addHandler("animation-finish", updateCorrectionLink);

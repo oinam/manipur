@@ -284,3 +284,16 @@ leaves OpenSky alone; otherwise it tries OpenSky itself, which costs nothing whe
 fails. Planes show only while the Mac runs the relay. The relay keeps the same
 daily cap of 3,600 busy polls, and since it is now the only poller, the Worker and
 the logger no longer share the credits.
+
+## 2026-11-10 — Info panel, starting with planes
+
+Brajeshwar asked for a collapsible, see-through info panel beside the controls at the
+top right, starting with the day's planes. The Worker keeps a log of each airline
+flight's first, last, and closest sightings for the day in Imphal time, folding in a
+snapshot only once it is two minutes old, and `/api/aircraft` returns it as `today`.
+A flight last seen within 40 km and 3,000 m above the field, lower than it was first
+seen, landed; one first seen like that and climbing took off; anything else passed,
+with its closest distance. On the first day's log no airline flight came within
+121 km or below 2,000 m, because OpenSky's receivers do not reach the valley, so
+today the list is honest but mostly "passed". The collapse state is remembered per
+browser, and the panel starts collapsed on narrow screens.

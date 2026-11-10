@@ -16,6 +16,34 @@ interface Snapshot {
   aircraft: Aircraft[];
 }
 
+// One airline flight's first, last, and closest sightings today, for the info panel.
+interface Sighting {
+  time: number;
+  km: number; // from the airport
+  altitude: number;
+}
+
+interface Track {
+  first: Sighting;
+  last: Sighting;
+  closest: Sighting;
+}
+
+interface Day {
+  date: string; // in Imphal's time zone
+  applied: number; // newest snapshot time already folded in
+  tracks: Record<string, Track>;
+}
+
+type FlightKind = "arrival" | "departure" | "passing";
+
+interface Flight {
+  callsign: string;
+  kind: FlightKind;
+  time: number;
+  km: number;
+}
+
 interface Secrets {
   OPENSKY_CLIENT_ID: string;
   OPENSKY_CLIENT_SECRET: string;
@@ -49,6 +77,34 @@ const OPENSKY_TOKEN =
   "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token";
 const SOURCE = "The OpenSky Network, https://opensky-network.org";
 const TOKEN_MARGIN_MS = 60_000;
+const IMPHAL_OFFSET_MS = 5.5 * 3_600_000; // India Standard Time, UTC+5:30
+// A flight last seen this close and low, and lower than it was first seen, came in to land;
+// one first seen like that and climbing took off. Anything else passed by.
+const NEAR_KM = 40;
+const LOW_M = 3_000;
+const KM_PER_DEGREE = 111.2;
+
+function kmFromAirport(aircraft: Aircraft): number {
+  const dLat = aircraft.lat - AIRPORT.lat;
+  const dLon = (aircraft.lon - AIRPORT.lon) * Math.cos((AIRPORT.lat * Math.PI) / 180);
+  return Math.round(Math.hypot(dLat, dLon) * KM_PER_DEGREE);
+}
+
+function imphalDate(time: number): string {
+  return new Date(time + IMPHAL_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+function classify(callsign: string, track: Track): Flight {
+  const { first, last, closest } = track;
+  const lowNear = (sighting: Sighting) => sighting.km <= NEAR_KM && sighting.altitude <= LOW_M;
+  if (lowNear(last) && last.altitude < first.altitude) {
+    return { callsign, kind: "arrival", time: last.time, km: last.km };
+  }
+  if (lowNear(first) && last.altitude > first.altitude) {
+    return { callsign, kind: "departure", time: first.time, km: first.km };
+  }
+  return { callsign, kind: "passing", time: closest.time, km: closest.km };
+}
 
 type State = [
   string, // icao24
@@ -127,7 +183,46 @@ export class AircraftFeed extends DurableObject<Bindings> {
     return aircraft;
   }
 
+  // Folds snapshots into today's log once they are two minutes old, so the log is no
+  // newer than the planes on the map. A snapshot is kept long enough to be folded.
+  private async fold(snapshots: Snapshot[]): Promise<Day> {
+    const now = Date.now();
+    const date = imphalDate(now);
+    const stored = await this.ctx.storage.get<Day>("day");
+    const day: Day = stored?.date === date ? stored : { date, applied: 0, tracks: {} };
+    const ready = snapshots.filter(
+      (snapshot) =>
+        snapshot.time > day.applied &&
+        snapshot.time <= now - DELAY_MS &&
+        imphalDate(snapshot.time) === date,
+    );
+    for (const snapshot of ready) {
+      for (const aircraft of snapshot.aircraft) {
+        const sighting = {
+          time: snapshot.time,
+          km: kmFromAirport(aircraft),
+          altitude: aircraft.altitude,
+        };
+        const track = day.tracks[aircraft.callsign];
+        if (!track) {
+          day.tracks[aircraft.callsign] = { first: sighting, last: sighting, closest: sighting };
+          continue;
+        }
+        track.last = sighting;
+        if (sighting.km < track.closest.km) {
+          track.closest = sighting;
+        }
+      }
+      day.applied = snapshot.time;
+    }
+    if (ready.length || stored?.date !== date) {
+      await this.ctx.storage.put("day", day);
+    }
+    return day;
+  }
+
   private async store(snapshot: Snapshot): Promise<void> {
+    await this.fold((await this.ctx.storage.get<Snapshot[]>("snapshots")) ?? []);
     const kept = ((await this.ctx.storage.get<Snapshot[]>("snapshots")) ?? []).filter(
       (kept) => kept.time > snapshot.time - KEEP_MS && kept.time < snapshot.time,
     );
@@ -172,20 +267,26 @@ export class AircraftFeed extends DurableObject<Bindings> {
   }
 
   // The newest snapshot at least two minutes old, and the one after it if that is old enough too.
-  async delayed(): Promise<Snapshot[]> {
+  // Also today's airline flights, each as an arrival, a departure, or a pass, by time.
+  async delayed(): Promise<{ snapshots: Snapshot[]; today: Flight[] }> {
     await this.ctx.storage.put("watched", Date.now());
     if ((await this.ctx.storage.getAlarm()) === null) {
       await this.ctx.storage.setAlarm(Date.now());
     }
     const shown = Date.now() - DELAY_MS;
     const snapshots = (await this.ctx.storage.get<Snapshot[]>("snapshots")) ?? [];
+    const day = await this.fold(snapshots);
+    const today = Object.entries(day.tracks)
+      .map(([callsign, track]) => classify(callsign, track))
+      .sort((a, b) => a.time - b.time);
     const index = snapshots.findLastIndex((snapshot) => snapshot.time <= shown);
     const before = snapshots[index];
     if (!before) {
-      return [];
+      return { snapshots: [], today };
     }
     const after = snapshots[index + 1];
-    return after && after.time <= shown + NEXT_SLACK_MS ? [before, after] : [before, before];
+    const pair = after && after.time <= shown + NEXT_SLACK_MS ? [before, after] : [before, before];
+    return { snapshots: pair, today };
   }
 }
 
@@ -241,7 +342,7 @@ export default {
     if (cached) {
       return cached;
     }
-    const body = { source: SOURCE, delay_ms: DELAY_MS, snapshots: await feed.delayed() };
+    const body = { source: SOURCE, delay_ms: DELAY_MS, ...(await feed.delayed()) };
     const response = Response.json(body, {
       headers: { "Cache-Control": `public, max-age=${String(EDGE_CACHE_S)}` },
     });

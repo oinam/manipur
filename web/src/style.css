@@ -125,7 +125,85 @@ button:focus-visible,
   transition: transform 0.3s;
 }
 
+.info {
+  top: 16px;
+  right: 66px;
+  width: min(260px, calc(100vw - 98px));
+  background: rgba(31, 42, 46, 0.62);
+  backdrop-filter: blur(6px);
+  font-size: 13px;
+}
+
+.info header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 0 0 12px;
+}
+
+.info h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#info-toggle {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+#info-toggle[aria-expanded="false"] {
+  transform: rotate(-90deg);
+}
+
+#info-body {
+  max-height: min(40vh, 300px);
+  padding: 0 12px 8px;
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
+}
+
+#flights {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+#flights li {
+  display: grid;
+  grid-template-columns: 3.2em 5.5em 1fr;
+  gap: 6px;
+  padding: 2px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+#flights .kind {
+  color: var(--muted);
+}
+
+.info .note {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 700px) {
+  .info {
+    top: 64px;
+    right: 66px;
+    left: 16px;
+    width: auto;
+  }
+}
+
 .settings {
+  z-index: 1;
   top: 221px;
   right: 66px;
   padding: 8px 12px;

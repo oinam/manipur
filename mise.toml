@@ -82,7 +82,7 @@ depends = ["build"]
 run = "pnpm --dir web exec vite preview"
 
 [tasks.live]
-description = "Run the Worker and the viewer together; open http://localhost:8644/?aircraft=live"
+description = "Run the Worker and the built viewer together; open http://localhost:8644"
 depends = ["api", "preview"]
 
 [tasks.upload]

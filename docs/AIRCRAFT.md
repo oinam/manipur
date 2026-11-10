@@ -63,8 +63,8 @@ Brajeshwar decided these on 2026-11-10.
    which posts each OpenSky reply to `POST /api/aircraft` with the `RELAY_TOKEN`
    bearer token. The Worker filters and stores it as if it had polled, and polls
    OpenSky itself only after ten quiet minutes from the relay. Planes show only while
-   the relay runs. `mise run live` runs it locally with `.env`, and the viewer on port 8644
-   with `?aircraft=live`.
+   the relay runs. `mise run api` runs it locally with `.env`, behind the viewer from
+   `mise run dev` (port 8645) or `mise run live` (port 8644).
 3. **Viewer** (built; `web/src/aircraft.ts`): a canvas layer like the water's. It
    is not under the Animation switch: a plane is a real event, so it shows even
    with Animation off. A setting of its own may come later. Positions go from latitude and longitude to UTM in the

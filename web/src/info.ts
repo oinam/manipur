@@ -33,6 +33,12 @@ const TIME = new Intl.DateTimeFormat("en-IN", {
   minute: "2-digit",
   hourCycle: "h23",
 });
+const DATE = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Asia/Kolkata",
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
 // A status this long past the scheduled time is likely stale, so it is not shown.
 const STALE_STATUS_MS = 3_600_000;
 const SEEN_MARK = "✓";
@@ -140,6 +146,7 @@ export function startInfo(): void {
   const body = element("info-body", HTMLDivElement);
   const flights = element("flights", HTMLDivElement);
   const note = element("flights-note", HTMLParagraphElement);
+  const title = element("info-title", HTMLHeadingElement);
 
   const setCollapsed = (collapsed: boolean) => {
     body.hidden = collapsed;
@@ -157,6 +164,7 @@ export function startInfo(): void {
   });
 
   const load = async () => {
+    title.textContent = `Airplanes (Today, ${DATE.format(Date.now())})`;
     try {
       const response = await fetch(API);
       if (!response.ok) {

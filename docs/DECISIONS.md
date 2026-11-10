@@ -219,6 +219,19 @@ for everyone, the license the map already follows for OpenStreetMap, and needs n
 key. Its API cannot return past positions, so the two-minute delay is a Durable
 Object that polls by need and keeps a few minutes of snapshots.
 
+## 2026-11-10 — OpenSky, locally until licensed
+
+Brajeshwar chose to build on OpenSky after all and created an API client. On the
+first test it saw two flights near Imphal that adsb.lol missed. Its terms cover
+research use, so it runs on Brajeshwar's machine; the public site waits for
+OpenSky's written license. The secrets live in `.env` and, once deployed, as Worker
+secrets.
+
+The aircraft server is the site's existing Worker, given a `main` script and a
+SQLite-backed Durable Object. The Worker answers `/api/aircraft` and hands every
+other path to the static assets. The viewer starts planes only with
+`?aircraft=live` or `?aircraft=demo` until publishing is decided.
+
 ## 2026-11-10 — Plane style
 
 Brajeshwar chose style C from the options sheet: an A320-sized airliner with body,

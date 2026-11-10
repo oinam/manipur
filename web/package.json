@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "lint": "tsc --noEmit && eslint . && prettier --check .",
+    "lint": "tsc --noEmit && tsc --noEmit -p worker && eslint . && prettier --check .",
     "format": "prettier --write .",
     "build": "tsc --noEmit && vite build && ln -sfn ../../out/imphal/tiles dist/tiles",
     "site": "rsync -aL --delete --delete-excluded --exclude vips-properties.xml --exclude tiles/pyramid/ dist/ ../out/imphal/site/",

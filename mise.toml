@@ -71,6 +71,19 @@ description = "Build the viewer and serve it with local tiles on port 8643"
 depends = ["build"]
 run = ".venv/bin/python -m http.server 8643 --bind 127.0.0.1 --directory web/dist"
 
+[tasks.api]
+description = "Run the aircraft Worker locally on port 8790, with secrets from .env"
+run = "pnpm --dir web exec wrangler dev --env-file ../.env --port 8790 --ip 127.0.0.1"
+
+[tasks.preview]
+description = "Build the viewer and serve it on port 8644, passing /api to the local Worker"
+depends = ["build"]
+run = "pnpm --dir web exec vite preview"
+
+[tasks.live]
+description = "Run the Worker and the viewer together; open http://localhost:8644/?aircraft=live"
+depends = ["api", "preview"]
+
 [tasks.upload]
 description = "Upload new tile pyramids to R2"
 run = "uv run python tools/upload_tiles.py"

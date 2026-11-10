@@ -65,6 +65,7 @@ uv run manipur frames --area imphal      # renders all 24 views as seamless 2048
 uv run manipur tile   --area imphal      # builds each view's Deep Zoom pyramid and the search index
 pnpm --dir web install && pnpm --dir web build   # builds the viewer into web/dist
 uv run python tools/upload_tiles.py      # uploads new tile pyramids to R2
+mise run live                            # local aircraft Worker and viewer: http://localhost:8644/?aircraft=live
 pnpm --dir web run deploy                        # publishes to manipur.oinam.com
 uv run pytest                            # runs the tests
 uv run ruff check . && uv run ruff format --check .   # lints and checks Python formatting

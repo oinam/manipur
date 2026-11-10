@@ -3,19 +3,22 @@
 Goal: real planes landing at and leaving Bir Tikendrajit International Airport
 (IMF / VEIM), moving on the map. Brajeshwar asked for it to be built on 2026-11-10.
 
-## Source: adsb.lol
+## Source: OpenSky, licensed use pending
 
-Read 2026-11-10; the row is in `docs/DATA.md`.
+Read 2026-11-10; both rows are in `docs/DATA.md`. Brajeshwar chose OpenSky and set up
+an API client on 2026-11-10. It sees flights near Imphal that adsb.lol misses. Its
+terms allow research use, so it is used on Brajeshwar's machine only; the public
+site needs OpenSky's written license first.
 
 | Source | Terms found | Fit |
 |---|---|---|
-| adsb.lol | API page: "the API is available to everyone"; license ODbL 1.0. No key needed today; keys are offered and may become required. | **Used.** Same license as OpenStreetMap, which the map already follows. |
-| OpenSky Network | Terms of use, read 2026-11-10: the REST API is for "non-profit research and educational use only," and use "in any operational capacity — including but not limited to integration into a live product, service, or automated system — requires a written license," even for non-profits. They also bar passing the data on. | **Not used** without a written license from contact[at]opensky-network.org. |
+| OpenSky Network | Terms of use, read 2026-11-10: the REST API is for "non-profit research and educational use only," and use "in any operational capacity — including but not limited to integration into a live product, service, or automated system — requires a written license," even for non-profits. They also bar passing the data on. | **Used locally.** Publishing needs a written license from contact[at]opensky-network.org. |
+| adsb.lol | API page: "the API is available to everyone"; license ODbL 1.0. No key needed today. | Logged for comparison. Saw nothing near Imphal on the morning of 2026-11-10. |
 | adsb.fi | "personal, non-commercial use only." | Not used. |
 | airplanes.live | Terms page refuses automated reading. | Not checked. |
 
-The upstream request is one small function, so OpenSky can replace adsb.lol if it
-ever grants a license.
+The upstream request is one small function in the Worker, so the source can change
+without touching the rest.
 
 ## The main risk: coverage
 
@@ -34,7 +37,7 @@ Brajeshwar decided these on 2026-11-10.
   followed by a flight number, and it is not flagged military. Everything else is
   dropped on the server and never reaches a browser. The private log records
   everything, so the allowlist can be checked against what flies.
-- **A two-minute delay.** adsb.lol has no way to ask for the past, so the server
+- **A two-minute delay.** The server
   keeps the last few minutes of positions and serves the ones from two minutes ago,
   with the next ones so the viewer can move planes smoothly between two real
   points. The map says the planes are two minutes behind.
@@ -44,12 +47,16 @@ Brajeshwar decided these on 2026-11-10.
 ## How it works
 
 1. **Logger** (`tools/log_aircraft.py`): the same polling, run locally, writing
-   every aircraft within 150 km to `data/raw/aircraft/`, which is not committed.
-2. **Server:** a Cloudflare Worker with one Durable Object. Its alarm is the poller;
-   it stores timestamped snapshots, filters them, and keeps about five minutes.
-   `/api/aircraft` returns the snapshot at least two minutes old and the one after
-   it, cached at the edge for a few seconds so visitors share one read. Only
-   callsign, position, altitude, track, speed, and time are served.
+   every aircraft within 150 km from both sources to `data/raw/aircraft/`, which is
+   not committed.
+2. **Server** (built; `web/worker/index.ts`): the site's Worker with one Durable
+   Object, `AircraftFeed`. Its alarm is the poller; it fetches OpenSky's states in a
+   150 km box (one credit), keeps airline flights, stores timestamped snapshots, and
+   keeps five minutes. `/api/aircraft` returns the newest snapshot at least two
+   minutes old and the one after it, cached at the edge for 10 seconds so visitors
+   share one read. Only callsign, position, height above the field, and track are
+   served. `mise run live` runs it locally with `.env`, and the viewer on port 8644
+   with `?aircraft=live`.
 3. **Viewer** (built; `web/src/aircraft.ts`): a canvas layer like the water's. It
    is not under the Animation switch: a plane is a real event, so it shows even
    with Animation off. A setting of its own may come later. Positions go from latitude and longitude to UTM in the

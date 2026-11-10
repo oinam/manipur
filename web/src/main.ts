@@ -1,5 +1,6 @@
 import OpenSeadragon from "openseadragon";
 import { startAircraft } from "./aircraft";
+import { liveFeed } from "./live";
 import { simulatedArrival } from "./simulation";
 import { startWater } from "./water";
 import {
@@ -35,8 +36,10 @@ interface Label {
 const MANIFEST = "tiles/manifest.json";
 const TILE_BASE = (import.meta.env.VITE_TILE_BASE as string | undefined) ?? "tiles/";
 const STILL_MAX_MS = 4000;
-// No live feed is published yet; ?aircraft=demo shows a simulated arrival.
-const AIRCRAFT_DEMO = new URLSearchParams(location.search).get("aircraft") === "demo";
+// Planes are off until the live feed is published: ?aircraft=live reads the Worker,
+// and ?aircraft=demo shows a simulated arrival.
+const AIRCRAFT_MODE = new URLSearchParams(location.search).get("aircraft");
+const AIRCRAFT_DEMO = AIRCRAFT_MODE === "demo";
 const SEARCH_INDEX = "tiles/search.json";
 const MAX_RESULTS = 12;
 const FLY_TO_IMAGE_ZOOM = 1.5;
@@ -241,8 +244,9 @@ viewer.addHandler("open", () => {
     water.refresh();
   } else {
     water = startWater(viewer, byId("animation", HTMLInputElement), toCurrentView);
-    if (AIRCRAFT_DEMO) {
-      startAircraft(viewer, () => viewData(currentView), simulatedArrival);
+    if (AIRCRAFT_MODE === "demo" || AIRCRAFT_MODE === "live") {
+      const feed = AIRCRAFT_DEMO ? simulatedArrival : liveFeed;
+      startAircraft(viewer, () => viewData(currentView), feed);
     }
     viewer.addHandler("animation-finish", writeHash);
     viewer.addHandler("animation-finish", updateLabels);

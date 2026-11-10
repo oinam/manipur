@@ -1,2 +1,4 @@
 dist
 pnpm-lock.yaml
+worker/worker-configuration.d.ts
+.wrangler

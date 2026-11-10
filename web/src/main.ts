@@ -352,7 +352,11 @@ function bindZoom(id: string, action: () => void): void {
 
 bindZoom("zoom-in", () => viewer.viewport.zoomBy(1.6).applyConstraints());
 bindZoom("zoom-out", () => viewer.viewport.zoomBy(1 / 1.6).applyConstraints());
-bindZoom("home", () => viewer.viewport.goHome());
+// Home is the opening view, near enough to read the city, in whichever way it faces now.
+bindZoom("home", () => {
+  const [x, y] = toCurrentView(OPENING_VIEW.x, OPENING_VIEW.y);
+  goTo(x, y, OPENING_VIEW.zoom, false);
+});
 bindZoom("compass", () => {
   turnTo(NORTH_UP_VIEW);
 });

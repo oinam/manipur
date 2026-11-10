@@ -311,3 +311,11 @@ left. The info panel lists arrivals and departures with their scheduled times,
 hides a status more than an hour past its time because the free data rarely updates
 it, and ticks a flight OpenSky saw nearby. Without a timetable the panel falls back
 to the OpenSky sightings. The local Worker draws on the same monthly units.
+
+## 2026-11-10 — Toolbox defaults
+
+Brajeshwar asked for animation on by default and for planes to work regardless of it.
+Animation now starts on even when the system asks for reduced motion, and the switch
+in Settings remembers a visitor's choice under a new key, so earlier choices start
+over. Planes never read the switch. The home button goes to the opening view, in the
+current direction, instead of fitting all of Imphal, which was too small to read.

@@ -32,18 +32,17 @@ const FLOW_SPACING = 22;
 const FLOW_SPEED = 14;
 const FLOW_LANES = [-0.55, 0, 0.55];
 const REBUILD_DELAY_MS = 200;
-const MOTION_KEY = "water-motion";
+// Animation is on unless the visitor turned it off. Brajeshwar chose on by default,
+// even when the system asks for reduced motion; the switch is one click away. The key
+// changed when that default did, so earlier choices start over.
+const MOTION_KEY = "animation";
 
 function prefersMotion(): boolean {
   try {
-    const saved = localStorage.getItem(MOTION_KEY);
-    if (saved) {
-      return saved === "on";
-    }
+    return localStorage.getItem(MOTION_KEY) !== "off";
   } catch {
-    // Storage can be blocked; fall through to the system setting.
+    return true;
   }
-  return !matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 function saveMotion(enabled: boolean): void {

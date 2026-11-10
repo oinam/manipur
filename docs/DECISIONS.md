@@ -250,3 +250,13 @@ Brajeshwar asked for mise. `mise.toml` pins uv, Node, and pnpm to the versions
 already in use, loads `.env` for secrets such as the OpenSky client, and names the
 project's commands as tasks. uv and pnpm still install the packages, and CI is
 unchanged.
+
+## 2026-11-10 — Deploy on push
+
+Brajeshwar asked for the site to deploy when `main` is pushed. A `deploy` job in
+GitHub Actions runs `pnpm run deploy` after the lint and test jobs pass, with a
+Cloudflare API token as a repository secret. GitHub cannot render the map, so the
+map's data no longer ships with the site: the manifest, search, flow, and credits
+files join the pyramids on R2, uploaded last by `tools/upload_tiles.py` with
+`no-cache`. The Worker's assets are now `web/dist`, and `.assetsignore` keeps the
+local tiles link out of it.

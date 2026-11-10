@@ -1,0 +1,2 @@
+# The local build links the tile pyramids into dist; they are served from R2.
+tiles

@@ -2,6 +2,7 @@ import OpenSeadragon from "openseadragon";
 import { startAircraft } from "./aircraft";
 import { liveFeed } from "./live";
 import { simulatedArrival } from "./simulation";
+import { TILE_BASE } from "./tiles";
 import { startWater } from "./water";
 import {
   DEFAULT_VIEW,
@@ -33,14 +34,13 @@ interface Label {
   element: HTMLElement;
 }
 
-const MANIFEST = "tiles/manifest.json";
-const TILE_BASE = (import.meta.env.VITE_TILE_BASE as string | undefined) ?? "tiles/";
+const MANIFEST = `${TILE_BASE}manifest.json`;
 const STILL_MAX_MS = 4000;
 // Planes are off until the live feed is published: ?aircraft=live reads the Worker,
 // and ?aircraft=demo shows a simulated arrival.
 const AIRCRAFT_MODE = new URLSearchParams(location.search).get("aircraft");
 const AIRCRAFT_DEMO = AIRCRAFT_MODE === "demo";
-const SEARCH_INDEX = "tiles/search.json";
+const SEARCH_INDEX = `${TILE_BASE}search.json`;
 const MAX_RESULTS = 12;
 const FLY_TO_IMAGE_ZOOM = 1.5;
 const TIER_MIN_ZOOM: Record<number, number> = { 1: 0, 2: 0.18, 3: 0.8 };

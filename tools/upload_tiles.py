@@ -1,6 +1,7 @@
 """Upload each tile pyramid that R2 does not have yet; pyramids never change once named.
 
-Batches are recorded as they finish, so a stopped run picks up where it left off.
+Batches are recorded as they finish, so a stopped run picks up where it left off. The
+index files go last, so the manifest never names a pyramid R2 does not have yet.
 """
 
 import json
@@ -16,16 +17,20 @@ ACCOUNT_ID = "091e65b116deac24fcc274459b6fbde0"
 TILES = Path("out/imphal/tiles").resolve()
 DONE = Path("out/imphal/uploaded-pyramids.json")
 CACHE_CONTROL = "public, max-age=31536000, immutable"
+INDEX_CACHE_CONTROL = "no-cache"
 CONTENT_TYPES = {".webp": "image/webp", ".dzi": "application/xml"}
+INDEXES = ("manifest.json", "search.json", "flow.json", "credits.json")
 BATCH_FILES = 200
 ATTEMPTS = 8
 RETRY_SECONDS = 20
 
 
-def put_with_retries(entries: list[dict], content_type: str) -> None:
+def put_with_retries(
+    entries: list[dict], content_type: str, cache_control: str = CACHE_CONTROL
+) -> None:
     for attempt in range(1, ATTEMPTS + 1):
         try:
-            put(entries, content_type)
+            put(entries, content_type, cache_control)
             return
         except subprocess.CalledProcessError:
             if attempt == ATTEMPTS:
@@ -34,7 +39,7 @@ def put_with_retries(entries: list[dict], content_type: str) -> None:
             time.sleep(RETRY_SECONDS * attempt)
 
 
-def put(entries: list[dict], content_type: str) -> None:
+def put(entries: list[dict], content_type: str, cache_control: str) -> None:
     with tempfile.NamedTemporaryFile("w", suffix=".json") as listing:
         json.dump(entries, listing)
         listing.flush()
@@ -42,7 +47,7 @@ def put(entries: list[dict], content_type: str) -> None:
             [
                 "pnpm", "exec", "wrangler", "r2", "bulk", "put", BUCKET,
                 "--remote", "--force", "--filename", listing.name,
-                "--content-type", content_type, "--cache-control", CACHE_CONTROL,
+                "--content-type", content_type, "--cache-control", cache_control,
             ],
             cwd="web",
             env={**os.environ, "CLOUDFLARE_ACCOUNT_ID": ACCOUNT_ID},
@@ -69,6 +74,9 @@ def main() -> None:
         done.add(pyramid.name)
         DONE.write_text(json.dumps(sorted(done)))
         print(f"{pyramid.name}: uploaded", flush=True)
+    indexes = [{"key": name, "file": str(TILES / name)} for name in INDEXES]
+    put_with_retries(indexes, "application/json", INDEX_CACHE_CONTROL)
+    print("indexes: uploaded", flush=True)
 
 
 if __name__ == "__main__":

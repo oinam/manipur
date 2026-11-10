@@ -1,5 +1,7 @@
 import OpenSeadragon from "openseadragon";
 
+import { TILE_BASE } from "./tiles";
+
 interface FlowLine {
   width: number;
   points: [number, number][];
@@ -17,7 +19,7 @@ interface Segment {
   width: number;
 }
 
-const FLOW_INDEX = "tiles/flow.json";
+const FLOW_INDEX = `${TILE_BASE}flow.json`;
 const MIN_IMAGE_ZOOM = 0.5;
 const FRAME_MS = 125;
 const GLINT = "#8db9cd";

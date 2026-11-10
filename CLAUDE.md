@@ -64,9 +64,9 @@ uv run python tools/draw_sprites.py      # redraws the landmark sprites in asset
 uv run manipur frames --area imphal      # renders all 24 views as seamless 2048 px frames
 uv run manipur tile   --area imphal      # builds each view's Deep Zoom pyramid and the search index
 pnpm --dir web install && pnpm --dir web build   # builds the viewer into web/dist
-uv run python tools/upload_tiles.py      # uploads new tile pyramids to R2
+uv run python tools/upload_tiles.py      # uploads new tile pyramids, then their index files, to R2
 mise run live                            # local aircraft Worker and viewer: http://localhost:8644/?aircraft=live
-pnpm --dir web run deploy                        # publishes to manipur.oinam.com
+pnpm --dir web run deploy                        # publishes the code by hand; a push to main does it too
 uv run pytest                            # runs the tests
 uv run ruff check . && uv run ruff format --check .   # lints and checks Python formatting
 pnpm --dir web run lint                  # type-checks, lints, and checks viewer formatting
@@ -80,6 +80,11 @@ Add `make`/`just` targets as they appear and keep this list current.
 Work directly on `main`; no phase branches, no merging. Commit often,
 small, with messages that say what changed in the picture. Never force-push.
 Do not push unless asked. Remote: `git@github.com:oinam/manipur.git`.
+
+**A push to `main` publishes the site.** Once lint and tests pass, GitHub Actions
+deploys the viewer and Worker to manipur.oinam.com. So asking to push is asking to
+publish. Map data is separate: after a re-render, run the upload before pushing, so
+R2 has the new pyramids and indexes when the code arrives.
 
 ## /odo
 

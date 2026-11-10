@@ -3,7 +3,7 @@
   "account_id": "091e65b116deac24fcc274459b6fbde0",
   "compatibility_date": "2026-11-01",
   "main": "worker/index.ts",
-  "assets": { "directory": "../out/imphal/site", "binding": "ASSETS" },
+  "assets": { "directory": "dist", "binding": "ASSETS" },
   "durable_objects": { "bindings": [{ "name": "AIRCRAFT", "class_name": "AircraftFeed" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["AircraftFeed"] }],
   "routes": [{ "pattern": "manipur.oinam.com", "custom_domain": true }],

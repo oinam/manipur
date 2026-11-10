@@ -97,7 +97,10 @@
     <ul id="landmarks"></ul>
 
     <script>
-      fetch("tiles/credits.json")
+      // The published site keeps its tile indexes on R2; local builds serve them from tiles/.
+      const tiles =
+        location.hostname === "manipur.oinam.com" ? "https://manipur-tiles.oinam.com/" : "tiles/";
+      fetch(tiles + "credits.json", { cache: "no-cache" })
         .then((response) => response.json())
         .then((credits) => {
           const list = document.getElementById("landmarks");

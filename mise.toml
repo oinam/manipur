@@ -73,7 +73,8 @@ run = ".venv/bin/python -m http.server 8643 --bind 127.0.0.1 --directory web/dis
 
 [tasks.api]
 description = "Run the aircraft Worker locally on port 8790, with secrets from .env"
-run = "pnpm --dir web exec wrangler dev --env-file ../.env --var AIRCRAFT_FEED:on --port 8790 --ip 127.0.0.1"
+# The viewer serves the pages; wrangler would stall reading the tiles linked into dist.
+run = "pnpm --dir web exec wrangler dev --env-file ../.env --assets public --var AIRCRAFT_FEED:on --port 8790 --ip 127.0.0.1"
 
 [tasks.preview]
 description = "Build the viewer and serve it on port 8644, passing /api to the local Worker"
@@ -90,6 +91,10 @@ run = "uv run python tools/upload_tiles.py"
 
 [tasks.log-aircraft]
 description = "Log aircraft near Imphal airport to data/raw/aircraft/ until stopped"
+run = "caffeinate -i uv run python tools/log_aircraft.py"
+
+[tasks.relay]
+description = "Feed live planes to manipur.oinam.com from this Mac, and log them, until stopped"
 run = "caffeinate -i uv run python tools/log_aircraft.py"
 
 [tasks.deploy]

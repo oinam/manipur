@@ -271,3 +271,16 @@ polling ten minutes after the last request for planes, so nobody watching costs
 nothing. `AIRCRAFT_FEED` in `web/wrangler.jsonc` still switches the feed off, and
 `?aircraft=off` hides planes in the viewer. A written license is still welcome,
 and the record of what was granted is the row in `docs/DATA.md`.
+
+## 2026-11-10 — The Mac relays OpenSky
+
+OpenSky's login server times out for requests from Cloudflare (error 522) while it
+answers a home connection at once, so the Worker cannot poll it. Brajeshwar chose a
+relay on the home Mac: the aircraft logger, run as `mise run relay`, posts each OpenSky
+reply to `POST /api/aircraft` with a bearer token that matches the Worker secret
+`RELAY_TOKEN`. The Worker filters it to airline flights exactly as before and serves
+it two minutes late. While the relay has posted in the last ten minutes the Worker
+leaves OpenSky alone; otherwise it tries OpenSky itself, which costs nothing when it
+fails. Planes show only while the Mac runs the relay. The relay keeps the same
+daily cap of 3,600 busy polls, and since it is now the only poller, the Worker and
+the logger no longer share the credits.

@@ -4,6 +4,11 @@ Polls by need, as the server will: every 5 minutes while neither source has an a
 flight within range, every 20 seconds while one does. Each poll appends one line per
 source to data/raw/aircraft/<UTC date>.jsonl, which is not committed. OpenSky is used
 only when OPENSKY_CLIENT_ID and OPENSKY_CLIENT_SECRET are set, as mise does from .env.
+
+It is also the site's relay: OpenSky refuses Cloudflare's addresses, so when RELAY_TOKEN
+is set, each OpenSky reply is posted to the Worker, which keeps only the airline flights.
+OpenSky allows 4,000 credits a day, so after 3,600 polls in a UTC day it polls at the
+idle rate whatever is flying.
 """
 
 import json
@@ -29,6 +34,8 @@ OPENSKY_TOKEN = (
     "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
 )
 TOKEN_MARGIN_SECONDS = 60
+DAILY_BUSY_CREDITS = 3_600
+RELAY_URL = os.environ.get("RELAY_URL", "https://manipur.oinam.com/api/aircraft")
 USER_AGENT = "manipur.oinam.com map (brajeshwar@oinam.com)"
 LOG = Path("data/raw/aircraft")
 
@@ -79,6 +86,18 @@ class OpenSky:
         return states, names, [name for name in names if is_airline(name)]
 
 
+def relay(states: list, polled: datetime, token: str) -> None:
+    body = json.dumps({"time": int(polled.timestamp() * 1000), "states": states}).encode()
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "User-Agent": USER_AGENT,
+    }
+    request = urllib.request.Request(RELAY_URL, data=body, headers=headers, method="POST")
+    with urllib.request.urlopen(request, timeout=30):
+        pass
+
+
 def main() -> None:
     LOG.mkdir(parents=True, exist_ok=True)
     sources = {"adsb.lol": poll_adsb_lol}
@@ -86,9 +105,12 @@ def main() -> None:
         sources["opensky"] = OpenSky(
             os.environ["OPENSKY_CLIENT_ID"], os.environ["OPENSKY_CLIENT_SECRET"]
         ).poll
-    print("sources:", ", ".join(sources))
+    relay_token = os.environ.get("RELAY_TOKEN", "")
+    print("sources:", ", ".join(sources), f"(relaying to {RELAY_URL})" if relay_token else "")
+    polls: dict[str, int] = {}
     while True:
         now = datetime.now(UTC)
+        day = f"{now:%Y-%m-%d}"
         busy = False
         for name, poll in sources.items():
             record = {"t": now.isoformat(timespec="seconds"), "source": name}
@@ -96,13 +118,21 @@ def main() -> None:
                 aircraft, names, airline = poll()
                 record["ac"] = aircraft
                 busy = busy or bool(airline)
+                if name == "opensky":
+                    polls[day] = polls.get(day, 0) + 1
+                    if relay_token:
+                        try:
+                            relay(aircraft, now, relay_token)
+                        except Exception as error:  # the site misses one poll; the log keeps it
+                            print(f"{now:%H:%M:%S} relay error: {error}")
                 print(f"{now:%H:%M:%S} {name}: {len(aircraft)} aircraft {', '.join(sorted(names))}")
             except Exception as error:  # a failed poll is logged and retried
                 record["error"] = str(error)
                 print(f"{now:%H:%M:%S} {name} error: {error}")
             with (LOG / f"{now:%Y-%m-%d}.jsonl").open("a") as log:
                 log.write(json.dumps(record) + "\n")
-        time.sleep(BUSY_SECONDS if busy else IDLE_SECONDS)
+        within_credits = polls.get(day, 0) < DAILY_BUSY_CREDITS
+        time.sleep(BUSY_SECONDS if busy and within_credits else IDLE_SECONDS)
 
 
 if __name__ == "__main__":

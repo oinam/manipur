@@ -66,6 +66,7 @@ uv run manipur tile   --area imphal      # builds each view's Deep Zoom pyramid 
 pnpm --dir web install && pnpm --dir web build   # builds the viewer into web/dist
 uv run python tools/upload_tiles.py      # uploads new tile pyramids, then their index files, to R2
 mise run live                            # local aircraft Worker and viewer: http://localhost:8644/?aircraft=live
+mise run relay                           # feeds live planes to the site from this Mac until stopped
 pnpm --dir web run deploy                        # publishes the code by hand; a push to main does it too
 uv run pytest                            # runs the tests
 uv run ruff check . && uv run ruff format --check .   # lints and checks Python formatting

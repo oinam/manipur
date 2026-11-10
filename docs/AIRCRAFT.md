@@ -57,7 +57,13 @@ Brajeshwar decided these on 2026-11-10.
    minutes old and the one after it, cached at the edge for 10 seconds so visitors
    share one read. Only callsign, position, height above the field, and track are
    served. It polls at the busy rate for at most 3,600 polls a UTC day, and stops ten
-   minutes after the last request, so it stays under OpenSky's 4,000 daily credits. `mise run live` runs it locally with `.env`, and the viewer on port 8644
+   minutes after the last request, so it stays under OpenSky's 4,000 daily credits.
+   OpenSky refuses Cloudflare's addresses (error 522 at its login server), so the
+   polling actually happens on Brajeshwar's Mac: `mise run relay` runs the logger,
+   which posts each OpenSky reply to `POST /api/aircraft` with the `RELAY_TOKEN`
+   bearer token. The Worker filters and stores it as if it had polled, and polls
+   OpenSky itself only after ten quiet minutes from the relay. Planes show only while
+   the relay runs. `mise run live` runs it locally with `.env`, and the viewer on port 8644
    with `?aircraft=live`.
 3. **Viewer** (built; `web/src/aircraft.ts`): a canvas layer like the water's. It
    is not under the Animation switch: a plane is a real event, so it shows even

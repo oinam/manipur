@@ -188,6 +188,10 @@ button:focus-visible,
   color: var(--muted);
 }
 
+#flights li.past {
+  opacity: 0.45;
+}
+
 #flights .seen {
   color: #8db9cd;
   text-align: right;

@@ -104,6 +104,11 @@ function section(title: string, rows: HTMLLIElement[]): HTMLElement[] {
   return [heading, list];
 }
 
+// Landed or gone: its time has passed, or the airline says so.
+function isPast(flight: Scheduled, now: number): boolean {
+  return (flight.revised ?? flight.time) < now || ["arrived", "departed"].includes(flight.status);
+}
+
 function statusOf(flight: Scheduled, now: number): string {
   if (flight.revised !== undefined) {
     return `now ${TIME.format(flight.revised)}`;
@@ -114,15 +119,17 @@ function statusOf(flight: Scheduled, now: number): string {
 function renderSchedule(container: HTMLElement, schedule: Schedule, seen: Set<string>): void {
   const now = Date.now();
   const rows = (flights: Scheduled[], preposition: string) =>
-    flights.map((flight) =>
-      row(
+    flights.map((flight) => {
+      const item = row(
         [TIME.format(flight.time)],
         [flight.number],
         [`${preposition} ${flight.place}`, "place"],
         [statusOf(flight, now), "kind"],
         [flight.callsign && seen.has(flight.callsign) ? SEEN_MARK : "", "seen"],
-      ),
-    );
+      );
+      item.classList.toggle("past", isPast(flight, now));
+      return item;
+    });
   container.replaceChildren(
     ...section("Arrivals", rows(schedule.arrivals, "from")),
     ...section("Departures", rows(schedule.departures, "to")),

@@ -1,11 +1,26 @@
-// The info panel beside the controls. It starts with today's airline flights at Imphal,
-// as the Worker sorted them: arrivals, departures, and flights that only passed nearby.
+// The info panel beside the controls. It starts with today's timetable at Imphal, marking
+// the flights OpenSky saw nearby. Without a timetable it lists what OpenSky saw instead.
 
 interface Flight {
   callsign: string;
   kind: "arrival" | "departure" | "passing";
   time: number;
   km: number;
+}
+
+interface Scheduled {
+  number: string;
+  callsign?: string;
+  airline: string;
+  place: string;
+  time: number;
+  revised?: number;
+  status: string;
+}
+
+interface Schedule {
+  arrivals: Scheduled[];
+  departures: Scheduled[];
 }
 
 const API = "/api/aircraft";
@@ -18,9 +33,15 @@ const TIME = new Intl.DateTimeFormat("en-IN", {
   minute: "2-digit",
   hourCycle: "h23",
 });
-const NOTE =
+// A status this long past the scheduled time is likely stale, so it is not shown.
+const STALE_STATUS_MS = 3_600_000;
+const SEEN_MARK = "✓";
+const SIGHTINGS_NOTE =
   "Times in IST, two minutes late, from The OpenSky Network. Its receivers rarely reach the " +
   "valley floor, so most flights show only as passing.";
+const SCHEDULE_NOTE =
+  `Scheduled times in IST from AeroDataBox; airlines may change them. ${SEEN_MARK} marks a ` +
+  "flight OpenSky saw near Imphal, shown on the map two minutes late.";
 
 function element<T extends HTMLElement>(id: string, type: new () => T): T {
   const found = document.getElementById(id);
@@ -57,27 +78,67 @@ function describe(flight: Flight): string {
   return `passed, ${String(flight.km)} km`;
 }
 
-function render(list: HTMLUListElement, flights: Flight[]): void {
-  list.replaceChildren(
-    ...flights.map((flight) => {
-      const item = document.createElement("li");
-      const time = document.createElement("span");
-      const callsign = document.createElement("span");
-      const kind = document.createElement("span");
-      time.textContent = TIME.format(flight.time);
-      callsign.textContent = flight.callsign;
-      kind.textContent = describe(flight);
-      kind.className = "kind";
-      item.append(time, callsign, kind);
-      return item;
-    }),
+function row(...cells: [string, string?][]): HTMLLIElement {
+  const item = document.createElement("li");
+  for (const [text, className] of cells) {
+    const cell = document.createElement("span");
+    cell.textContent = text;
+    if (className) {
+      cell.className = className;
+    }
+    item.append(cell);
+  }
+  return item;
+}
+
+function section(title: string, rows: HTMLLIElement[]): HTMLElement[] {
+  const heading = document.createElement("h3");
+  const list = document.createElement("ul");
+  heading.textContent = title;
+  list.append(...rows);
+  return [heading, list];
+}
+
+function statusOf(flight: Scheduled, now: number): string {
+  if (flight.revised !== undefined) {
+    return `now ${TIME.format(flight.revised)}`;
+  }
+  return now - flight.time < STALE_STATUS_MS ? flight.status : "";
+}
+
+function renderSchedule(container: HTMLElement, schedule: Schedule, seen: Set<string>): void {
+  const now = Date.now();
+  const rows = (flights: Scheduled[], preposition: string) =>
+    flights.map((flight) =>
+      row(
+        [TIME.format(flight.time)],
+        [flight.number],
+        [`${preposition} ${flight.place}`, "place"],
+        [statusOf(flight, now), "kind"],
+        [flight.callsign && seen.has(flight.callsign) ? SEEN_MARK : "", "seen"],
+      ),
+    );
+  container.replaceChildren(
+    ...section("Arrivals", rows(schedule.arrivals, "from")),
+    ...section("Departures", rows(schedule.departures, "to")),
+  );
+}
+
+function renderSightings(container: HTMLElement, flights: Flight[]): void {
+  container.replaceChildren(
+    ...section(
+      "Seen near Imphal",
+      flights.map((flight) =>
+        row([TIME.format(flight.time)], [flight.callsign], [describe(flight), "kind"]),
+      ),
+    ),
   );
 }
 
 export function startInfo(): void {
   const toggle = element("info-toggle", HTMLButtonElement);
   const body = element("info-body", HTMLDivElement);
-  const list = element("flights", HTMLUListElement);
+  const flights = element("flights", HTMLDivElement);
   const note = element("flights-note", HTMLParagraphElement);
 
   const setCollapsed = (collapsed: boolean) => {
@@ -101,13 +162,21 @@ export function startInfo(): void {
       if (!response.ok) {
         throw new Error(`Aircraft API ${String(response.status)}`);
       }
-      const { today = [] } = (await response.json()) as { today?: Flight[] };
-      render(list, today);
-      note.textContent = today.length
-        ? NOTE
-        : `No airline flights seen near Imphal yet today. ${NOTE}`;
+      const { today = [], schedule } = (await response.json()) as {
+        today?: Flight[];
+        schedule?: Schedule;
+      };
+      if (schedule && schedule.arrivals.length + schedule.departures.length > 0) {
+        renderSchedule(flights, schedule, new Set(today.map((flight) => flight.callsign)));
+        note.textContent = SCHEDULE_NOTE;
+      } else {
+        renderSightings(flights, today);
+        note.textContent = today.length
+          ? SIGHTINGS_NOTE
+          : `No airline flights seen near Imphal yet today. ${SIGHTINGS_NOTE}`;
+      }
     } catch {
-      list.replaceChildren();
+      flights.replaceChildren();
       note.textContent = "Plane times are not available right now.";
     }
   };

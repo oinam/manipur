@@ -73,8 +73,10 @@ Brajeshwar decided these on 2026-11-10.
    ground, and moves smoothly between two snapshots shown two minutes late. `?aircraft=demo` shows a simulated arrival on runway 22 (OSM
    way 44884414, 2,746 m) every five minutes, labeled as simulated
    (`web/src/simulation.ts`). `?aircraft=off` shows no planes.
-4. **Info panel** (`web/src/info.ts`): today's airline flights from the same API,
-   each as landed, took off, or passed, in IST, refreshed every minute.
+4. **Info panel** (`web/src/info.ts`): today's timetable at Imphal from AeroDataBox
+   (`schedule` in the same API), with a tick on flights OpenSky saw nearby. Without a
+   timetable it lists OpenSky's sightings as landed, took off, or passed. In IST,
+   refreshed every minute.
 5. **Credits:** OpenSky in the credits panel, `/about.html`, and the API response.
 
 - **Style C, bold.** The plane is the A320-sized model with body, fin, and engines,

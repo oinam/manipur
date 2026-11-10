@@ -297,3 +297,17 @@ with its closest distance. On the first day's log no airline flight came within
 121 km or below 2,000 m, because OpenSky's receivers do not reach the valley, so
 today the list is honest but mostly "passed". The collapse state is remembered per
 browser, and the panel starts collapsed on narrow screens.
+
+## 2026-11-10 — Timetable from AeroDataBox
+
+OpenSky cannot see planes land at Imphal, so Brajeshwar chose AeroDataBox's free
+plan, through RapidAPI, for the day's timetable. Its terms allow showing the data
+inside an application like this map, for non-commercial use, but not passing it on
+as a feed, and they limit how long it may be kept. The Worker keeps only today's
+board, in two halves of the day, and replaces it each day. The plan has 400 units a
+month and a board request costs 2, so the Worker makes at most six requests a day
+(both halves, then refreshes after three hours) and stops if fewer than 20 units are
+left. The info panel lists arrivals and departures with their scheduled times,
+hides a status more than an hour past its time because the free data rarely updates
+it, and ticks a flight OpenSky saw nearby. Without a timetable the panel falls back
+to the OpenSky sightings. The local Worker draws on the same monthly units.

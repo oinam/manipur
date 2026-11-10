@@ -248,9 +248,13 @@ button:focus-visible,
   right: 16px;
   bottom: 16px;
   left: auto;
-  max-width: min(520px, calc(100vw - 32px));
-  padding: 6px 12px;
-  font-size: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  max-width: calc(100vw - 32px);
+  padding: 4px 10px;
+  font-size: 12px;
 }
 
 .credits summary {
@@ -259,13 +263,20 @@ button:focus-visible,
 }
 
 .credits .disclaimer {
-  margin: 0 0 4px;
   color: var(--muted);
 }
 
-.credits .correction {
-  display: block;
-  padding-bottom: 4px;
+/* The full credits open above the footer, so the footer itself stays one line. */
+.credits .credits-body {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  width: min(520px, calc(100vw - 32px));
+  padding: 4px 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 13px;
 }
 
 .credits p,

@@ -135,31 +135,13 @@ button:focus-visible,
 }
 
 .info header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 0 0 0 12px;
+  padding: 8px 12px;
 }
 
 .info h2 {
   margin: 0;
   font-size: 13px;
   font-weight: 600;
-}
-
-#info-toggle {
-  width: 32px;
-  height: 32px;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-size: 15px;
-  cursor: pointer;
-}
-
-#info-toggle[aria-expanded="false"] {
-  transform: rotate(-90deg);
 }
 
 #info-body {

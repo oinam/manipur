@@ -1,4 +1,4 @@
-// The info panel beside the controls. It starts with today's timetable at Imphal, marking
+// The info panel beside the controls, shown and hidden by the plane button among them. It starts with today's timetable at Imphal, marking
 // the flights OpenSky saw nearby. Without a timetable it lists what OpenSky saw instead.
 
 interface Flight {
@@ -26,7 +26,6 @@ interface Schedule {
 const API = "/api/aircraft";
 const RELOAD_MS = 60_000;
 const COLLAPSED_KEY = "info-collapsed";
-const NARROW = "(max-width: 700px)";
 const TIME = new Intl.DateTimeFormat("en-IN", {
   timeZone: "Asia/Kolkata",
   hour: "2-digit",
@@ -142,23 +141,19 @@ function renderSightings(container: HTMLElement, flights: Flight[]): void {
 }
 
 export function startInfo(): void {
-  const toggle = element("info-toggle", HTMLButtonElement);
-  const body = element("info-body", HTMLDivElement);
+  const toggle = element("planes", HTMLButtonElement);
+  const panel = element("info", HTMLElement);
   const flights = element("flights", HTMLDivElement);
   const note = element("flights-note", HTMLParagraphElement);
   const title = element("info-title", HTMLHeadingElement);
 
   const setCollapsed = (collapsed: boolean) => {
-    body.hidden = collapsed;
+    panel.hidden = collapsed;
     toggle.setAttribute("aria-expanded", String(!collapsed));
-    toggle.setAttribute(
-      "aria-label",
-      collapsed ? "Expand the info panel" : "Collapse the info panel",
-    );
   };
-  setCollapsed(remembered() ?? matchMedia(NARROW).matches);
+  setCollapsed(remembered() ?? false);
   toggle.addEventListener("click", () => {
-    const collapsed = !body.hidden;
+    const collapsed = !panel.hidden;
     setCollapsed(collapsed);
     remember(collapsed);
   });

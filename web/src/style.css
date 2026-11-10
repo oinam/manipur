@@ -159,6 +159,11 @@ button:focus-visible,
   color: var(--muted);
 }
 
+.credits .disclaimer {
+  margin: 0 0 4px;
+  color: var(--muted);
+}
+
 .credits .correction {
   display: block;
   padding-bottom: 4px;

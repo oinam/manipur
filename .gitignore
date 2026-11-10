@@ -24,9 +24,21 @@ web/dist/
 
 # secrets
 .env
+.env.*
+!.env.example
 .dev.vars
 mise.local.toml
 
-# os / editors
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# os / editors / agents
 .DS_Store
-.claude/settings.local.json
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*~
+.claude/

@@ -231,6 +231,7 @@ button:focus-visible,
 }
 
 .water,
+.aircraft,
 .still {
   position: absolute;
   inset: 0;

@@ -50,9 +50,14 @@ Brajeshwar decided these on 2026-11-10.
    `/api/aircraft` returns the snapshot at least two minutes old and the one after
    it, cached at the edge for a few seconds so visitors share one read. Only
    callsign, position, altitude, track, speed, and time are served.
-3. **Viewer:** a canvas layer like the water's, under the Animation switch. Planes
-   are placed with the map's projection, lifted by altitude, and cast a shadow on
-   the ground. The runway (OSM way 44884414, 04/22, 2,746 m) is on the map.
+3. **Viewer** (built; `web/src/aircraft.ts`): a canvas layer like the water's, under
+   the Animation switch. Positions go from latitude and longitude to UTM in the
+   browser (`web/src/utm.ts`), then through the current view's matrix, so a plane
+   turns with all 24 views. It is lifted by altitude and casts a shadow on the
+   ground, and moves smoothly between two snapshots shown two minutes late. Until a
+   live feed exists, `?aircraft=demo` shows a simulated arrival on runway 22 (OSM
+   way 44884414, 2,746 m) every five minutes, labeled as simulated
+   (`web/src/simulation.ts`). Without that parameter the layer is not started.
 4. **Credits:** adsb.lol in the credits panel, `/about.html`, and the API response.
 
 - **Style C, bold.** The plane is the A320-sized model with body, fin, and engines,

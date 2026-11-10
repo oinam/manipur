@@ -1,4 +1,6 @@
 import OpenSeadragon from "openseadragon";
+import { startAircraft } from "./aircraft";
+import { simulatedArrival } from "./simulation";
 import { startWater } from "./water";
 import {
   DEFAULT_VIEW,
@@ -33,6 +35,8 @@ interface Label {
 const MANIFEST = "tiles/manifest.json";
 const TILE_BASE = (import.meta.env.VITE_TILE_BASE as string | undefined) ?? "tiles/";
 const STILL_MAX_MS = 4000;
+// No live feed is published yet; ?aircraft=demo shows a simulated arrival.
+const AIRCRAFT_DEMO = new URLSearchParams(location.search).get("aircraft") === "demo";
 const SEARCH_INDEX = "tiles/search.json";
 const MAX_RESULTS = 12;
 const FLY_TO_IMAGE_ZOOM = 1.5;
@@ -235,6 +239,14 @@ viewer.addHandler("open", () => {
     water.refresh();
   } else {
     water = startWater(viewer, byId("animation", HTMLInputElement), toCurrentView);
+    if (AIRCRAFT_DEMO) {
+      startAircraft(
+        viewer,
+        byId("animation", HTMLInputElement),
+        () => viewData(currentView),
+        simulatedArrival,
+      );
+    }
     viewer.addHandler("animation-finish", writeHash);
     viewer.addHandler("animation-finish", updateLabels);
     viewer.addHandler("animation-finish", updateCorrectionLink);

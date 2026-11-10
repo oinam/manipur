@@ -103,7 +103,6 @@ function between(first: Snapshot, second: Snapshot, time: number): Aircraft[] {
 
 export function startAircraft(
   viewer: OpenSeadragon.Viewer,
-  toggle: HTMLInputElement,
   currentView: () => View,
   feed: Feed,
 ): void {
@@ -216,7 +215,7 @@ export function startAircraft(
       canvas.height = source.height;
     }
     draw2d.clearRect(0, 0, canvas.width, canvas.height);
-    if (!toggle.checked || !pair) {
+    if (!pair) {
       return;
     }
     const density = source.width / source.clientWidth;

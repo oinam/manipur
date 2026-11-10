@@ -225,6 +225,12 @@ Brajeshwar chose style C from the options sheet: an A320-sized airliner with bod
 fin, and engines, drawn at twice real size. It is projected from a model in meters
 rather than drawn as sprites, so it turns smoothly in all 24 views.
 
+## 2026-11-10 — Planes are not animation
+
+Brajeshwar decided that planes show even with Animation off, because a plane is a
+real event rather than decoration. This narrows the Settings entry above: Animation
+covers the water, and planes may get a switch of their own later.
+
 ## 2026-11-10 — mise
 
 Brajeshwar asked for mise. `mise.toml` pins uv, Node, and pnpm to the versions

@@ -48,13 +48,24 @@ Recommended: OpenSky first, once its terms are read by hand.
    44884414, 04/22, 2,746 m) is inside the Imphal map.
 6. **Credits.** Add the source to the credits panel and `/about.html`.
 
+## Decided
+
+Brajeshwar decided both on 2026-11-10.
+
+- **Airline flights only.** The Worker keeps an aircraft only when its callsign
+  starts with the ICAO code of an airline on a short allowlist (IndiGo `IGO`, Air
+  India `AIC`, Air India Express `AXB`, and others that serve Imphal), followed by
+  a flight number. Everything else, including aircraft with no callsign, is dropped
+  on the server and never reaches a browser. The 48-hour log in step 1 is private
+  and records everything, so the allowlist can be checked against what flies.
+- **A two-minute delay.** The Worker asks OpenSky for positions as they were two
+  minutes ago, using the `time` parameter of `/states/all`, so it needs no storage.
+  OpenSky documents that parameter for times up to an hour in the past; step 1
+  confirms it works for our account. Planes are therefore drawn where they were two
+  minutes earlier, and the map says so.
+
 ## Decisions for Brajeshwar
 
-- **Which aircraft to show.** Imphal also sees military and government flights, and
-  Manipur is a sensitive place to publish those movements. Recommended: show only
-  scheduled airline callsigns and drop everything else on the server.
-- **Whether to delay the feed.** A delay of a minute or two costs little for a
-  map like this and lowers that sensitivity further.
 - **Whether a local receiver is on the table,** if step 1 fails.
 - **The plane sprite,** once options are rendered.
 

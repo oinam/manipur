@@ -204,3 +204,10 @@ seeded hash, so they are plausible rather than surveyed.
 A gear opens a settings panel. Its first entry, Animation, replaces the water button
 and is the one switch for moving things: water now, aircraft if they are built. It
 keeps the saved water choice and still starts off under Reduce Motion.
+
+## 2026-11-10 — Aircraft: airlines only, two minutes late
+
+Brajeshwar decided that live aircraft, if built, show only scheduled airline flights
+and run two minutes behind. Military, government, and unidentified aircraft are
+dropped on the server. How each works is in `docs/AIRCRAFT.md`. Nothing is built
+until OpenSky's terms are read and its row is in `docs/DATA.md`.

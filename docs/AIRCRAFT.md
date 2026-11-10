@@ -55,9 +55,12 @@ Brajeshwar decided these on 2026-11-10.
    the ground. The runway (OSM way 44884414, 04/22, 2,746 m) is on the map.
 4. **Credits:** adsb.lol in the credits panel, `/about.html`, and the API response.
 
+- **Style C, bold.** The plane is the A320-sized model with body, fin, and engines,
+  drawn at twice real size so it reads when zoomed out (`out/imphal/aircraft-options.png`,
+  from `tools/aircraft_options.py`). The fin is a plain red, not an airline's colors.
+
 ## Decisions for Brajeshwar
 
-- **The plane sprite,** from the rendered options.
 - **What to do if coverage is poor:** a local receiver near the airport (needs a
   check of India's rules on radio receivers), planes from the timetable labeled as
   not live, or stopping.

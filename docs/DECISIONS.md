@@ -219,6 +219,12 @@ for everyone, the license the map already follows for OpenStreetMap, and needs n
 key. Its API cannot return past positions, so the two-minute delay is a Durable
 Object that polls by need and keeps a few minutes of snapshots.
 
+## 2026-11-10 — Plane style
+
+Brajeshwar chose style C from the options sheet: an A320-sized airliner with body,
+fin, and engines, drawn at twice real size. It is projected from a model in meters
+rather than drawn as sprites, so it turns smoothly in all 24 views.
+
 ## 2026-11-10 — mise
 
 Brajeshwar asked for mise. `mise.toml` pins uv, Node, and pnpm to the versions

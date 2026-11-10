@@ -36,8 +36,8 @@ interface Label {
 
 const MANIFEST = `${TILE_BASE}manifest.json`;
 const STILL_MAX_MS = 4000;
-// Planes are off until the live feed is published: ?aircraft=live reads the Worker,
-// and ?aircraft=demo shows a simulated arrival.
+// Live planes come from the Worker; ?aircraft=demo shows a simulated arrival instead,
+// and ?aircraft=off shows none.
 const AIRCRAFT_MODE = new URLSearchParams(location.search).get("aircraft");
 const AIRCRAFT_DEMO = AIRCRAFT_MODE === "demo";
 const SEARCH_INDEX = `${TILE_BASE}search.json`;
@@ -244,7 +244,7 @@ viewer.addHandler("open", () => {
     water.refresh();
   } else {
     water = startWater(viewer, byId("animation", HTMLInputElement), toCurrentView);
-    if (AIRCRAFT_MODE === "demo" || AIRCRAFT_MODE === "live") {
+    if (AIRCRAFT_MODE !== "off") {
       const feed = AIRCRAFT_DEMO ? simulatedArrival : liveFeed;
       startAircraft(viewer, () => viewData(currentView), feed);
     }

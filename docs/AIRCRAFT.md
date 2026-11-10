@@ -3,16 +3,17 @@
 Goal: real planes landing at and leaving Bir Tikendrajit International Airport
 (IMF / VEIM), moving on the map. Brajeshwar asked for it to be built on 2026-11-10.
 
-## Source: OpenSky, licensed use pending
+## Source: OpenSky
 
 Read 2026-11-10; both rows are in `docs/DATA.md`. Brajeshwar chose OpenSky and set up
 an API client on 2026-11-10. It sees flights near Imphal that adsb.lol misses. Its
-terms allow research use, so it is used on Brajeshwar's machine only; the public
-site needs OpenSky's written license first.
+terms ask for a written license for a live product. Brajeshwar asked for one on
+2026-11-10 and got an automated reply that use is fine within the credit limit, so
+the site shows live planes (`docs/DECISIONS.md`, "Live planes on the site").
 
 | Source | Terms found | Fit |
 |---|---|---|
-| OpenSky Network | Terms of use, read 2026-11-10: the REST API is for "non-profit research and educational use only," and use "in any operational capacity — including but not limited to integration into a live product, service, or automated system — requires a written license," even for non-profits. They also bar passing the data on. | **Used locally.** Publishing needs a written license from contact[at]opensky-network.org. |
+| OpenSky Network | Terms of use, read 2026-11-10: the REST API is for "non-profit research and educational use only," and use "in any operational capacity — including but not limited to integration into a live product, service, or automated system — requires a written license," even for non-profits. They also bar passing the data on. | **Used on the site,** within the daily credit limit; license requested from contact[at]opensky-network.org. |
 | adsb.lol | API page: "the API is available to everyone"; license ODbL 1.0. No key needed today. | Logged for comparison. Saw nothing near Imphal on the morning of 2026-11-10. |
 | adsb.fi | "personal, non-commercial use only." | Not used. |
 | airplanes.live | Terms page refuses automated reading. | Not checked. |
@@ -55,18 +56,18 @@ Brajeshwar decided these on 2026-11-10.
    keeps five minutes. `/api/aircraft` returns the newest snapshot at least two
    minutes old and the one after it, cached at the edge for 10 seconds so visitors
    share one read. Only callsign, position, height above the field, and track are
-   served. `mise run live` runs it locally with `.env`, and the viewer on port 8644
+   served. It polls at the busy rate for at most 3,600 polls a UTC day, and stops ten
+   minutes after the last request, so it stays under OpenSky's 4,000 daily credits. `mise run live` runs it locally with `.env`, and the viewer on port 8644
    with `?aircraft=live`.
 3. **Viewer** (built; `web/src/aircraft.ts`): a canvas layer like the water's. It
    is not under the Animation switch: a plane is a real event, so it shows even
    with Animation off. A setting of its own may come later. Positions go from latitude and longitude to UTM in the
    browser (`web/src/utm.ts`), then through the current view's matrix, so a plane
    turns with all 24 views. It is lifted by altitude and casts a shadow on the
-   ground, and moves smoothly between two snapshots shown two minutes late. Until a
-   live feed exists, `?aircraft=demo` shows a simulated arrival on runway 22 (OSM
+   ground, and moves smoothly between two snapshots shown two minutes late. `?aircraft=demo` shows a simulated arrival on runway 22 (OSM
    way 44884414, 2,746 m) every five minutes, labeled as simulated
-   (`web/src/simulation.ts`). Without that parameter the layer is not started.
-4. **Credits:** adsb.lol in the credits panel, `/about.html`, and the API response.
+   (`web/src/simulation.ts`). `?aircraft=off` shows no planes.
+4. **Credits:** OpenSky in the credits panel, `/about.html`, and the API response.
 
 - **Style C, bold.** The plane is the A320-sized model with body, fin, and engines,
   drawn at twice real size so it reads when zoomed out (`out/imphal/aircraft-options.png`,
@@ -77,7 +78,6 @@ Brajeshwar decided these on 2026-11-10.
 - **What to do if coverage is poor:** a local receiver near the airport (needs a
   check of India's rules on radio receivers), planes from the timetable labeled as
   not live, or stopping.
-- **Deploying the Worker,** the site's first server code.
 
 ## Sources read
 

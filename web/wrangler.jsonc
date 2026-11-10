@@ -5,6 +5,7 @@
   "main": "worker/index.ts",
   "assets": { "directory": "dist", "binding": "ASSETS" },
   "durable_objects": { "bindings": [{ "name": "AIRCRAFT", "class_name": "AircraftFeed" }] },
+  "vars": { "AIRCRAFT_FEED": "on" },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["AircraftFeed"] }],
   "routes": [{ "pattern": "manipur.oinam.com", "custom_domain": true }],
 }

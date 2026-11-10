@@ -19,7 +19,7 @@ interface Snapshot {
 interface Secrets {
   OPENSKY_CLIENT_ID: string;
   OPENSKY_CLIENT_SECRET: string;
-  AIRCRAFT_FEED?: string; // "on" only from `mise run api`, until OpenSky licenses public use
+  AIRCRAFT_FEED?: string; // "on" turns the feed on; anything else answers 404
 }
 
 type Bindings = Env & Secrets;
@@ -33,6 +33,10 @@ const DELAY_MS = 120_000;
 const KEEP_MS = 300_000;
 const NEXT_SLACK_MS = 30_000;
 const EDGE_CACHE_S = 10;
+// OpenSky allows 4,000 credits a day. Past this many, poll at the idle rate (288 a day at most).
+const DAILY_BUSY_CREDITS = 3_600;
+// Stop polling when nobody has asked for planes in this long; the next visitor restarts it.
+const WATCHED_MS = 600_000;
 const AIRLINES = ["IGO", "AIC", "AXB", "SEJ", "LLR", "AKJ"];
 const AIRLINE_CALLSIGN = new RegExp(`^(${AIRLINES.join("|")})\\d`);
 const OPENSKY = "https://opensky-network.org/api/states/all";
@@ -120,6 +124,14 @@ export class AircraftFeed extends DurableObject<Bindings> {
 
   override async alarm(): Promise<void> {
     const now = Date.now();
+    const watched = (await this.ctx.storage.get<number>("watched")) ?? 0;
+    if (now - watched > WATCHED_MS) {
+      return;
+    }
+    const day = new Date(now).toISOString().slice(0, 10);
+    const credits = await this.ctx.storage.get<{ day: string; used: number }>("credits");
+    const used = credits?.day === day ? credits.used + 1 : 1;
+    await this.ctx.storage.put("credits", { day, used });
     let aircraft: Aircraft[] = [];
     try {
       aircraft = await this.fetchAircraft();
@@ -131,11 +143,13 @@ export class AircraftFeed extends DurableObject<Bindings> {
     );
     kept.push({ time: now, aircraft });
     await this.ctx.storage.put("snapshots", kept);
-    await this.ctx.storage.setAlarm(now + (aircraft.length ? BUSY_MS : IDLE_MS));
+    const busy = aircraft.length > 0 && used < DAILY_BUSY_CREDITS;
+    await this.ctx.storage.setAlarm(now + (busy ? BUSY_MS : IDLE_MS));
   }
 
   // The newest snapshot at least two minutes old, and the one after it if that is old enough too.
   async delayed(): Promise<Snapshot[]> {
+    await this.ctx.storage.put("watched", Date.now());
     if ((await this.ctx.storage.getAlarm()) === null) {
       await this.ctx.storage.setAlarm(Date.now());
     }
@@ -157,8 +171,7 @@ export default {
     if (url.pathname !== "/api/aircraft") {
       return env.ASSETS.fetch(request);
     }
-    // OpenSky's terms allow research use only until it grants a written license, so the
-    // feed answers only where AIRCRAFT_FEED is on: the local command, never the deployed site.
+    // OpenSky allowed use within its credit limit (docs/DATA.md); AIRCRAFT_FEED switches it off.
     if (env.AIRCRAFT_FEED !== "on") {
       return new Response("Not found", { status: 404 });
     }

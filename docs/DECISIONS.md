@@ -260,3 +260,14 @@ map's data no longer ships with the site: the manifest, search, flow, and credit
 files join the pyramids on R2, uploaded last by `tools/upload_tiles.py` with
 `no-cache`. The Worker's assets are now `web/dist`, and `.assetsignore` keeps the
 local tiles link out of it.
+
+## 2026-11-10 — Live planes on the site
+
+Brajeshwar wrote to OpenSky for a license and got an automated reply that use is
+fine within the API's credit limit, so live planes are on by default. The Worker
+keeps under OpenSky's 4,000 daily credits: it polls at the 20 second rate for at
+most 3,600 polls a UTC day and at the 5 minute rate after that, and it stops
+polling ten minutes after the last request for planes, so nobody watching costs
+nothing. `AIRCRAFT_FEED` in `web/wrangler.jsonc` still switches the feed off, and
+`?aircraft=off` hides planes in the viewer. A written license is still welcome,
+and the record of what was granted is the row in `docs/DATA.md`.

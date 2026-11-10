@@ -209,8 +209,15 @@ keeps the saved water choice and still starts off under Reduce Motion.
 
 Brajeshwar decided that live aircraft, if built, show only scheduled airline flights
 and run two minutes behind. Military, government, and unidentified aircraft are
-dropped on the server. How each works is in `docs/AIRCRAFT.md`. Nothing is built
-until OpenSky's terms are read and its row is in `docs/DATA.md`.
+dropped on the server. How each works is in `docs/AIRCRAFT.md`.
+
+## 2026-11-10 — Aircraft from adsb.lol, not OpenSky
+
+OpenSky's terms require a written license for any live product or automated system,
+even a non-profit one, so it is not used. adsb.lol publishes its API under ODbL 1.0
+for everyone, the license the map already follows for OpenStreetMap, and needs no
+key. Its API cannot return past positions, so the two-minute delay is a Durable
+Object that polls by need and keeps a few minutes of snapshots.
 
 ## 2026-11-10 — mise
 

@@ -1,77 +1,72 @@
-# Live aircraft at Imphal: plan
+# Live aircraft at Imphal
 
 Goal: real planes landing at and leaving Bir Tikendrajit International Airport
-(IMF / VEIM), moving on the map. This is a plan only. No flight source has been
-queried and none is in `docs/DATA.md` yet, because rule 2 in `CLAUDE.md` requires
-the row first.
+(IMF / VEIM), moving on the map. Brajeshwar asked for it to be built on 2026-11-10.
+
+## Source: adsb.lol
+
+Read 2026-11-10; the row is in `docs/DATA.md`.
+
+| Source | Terms found | Fit |
+|---|---|---|
+| adsb.lol | API page: "the API is available to everyone"; license ODbL 1.0. No key needed today; keys are offered and may become required. | **Used.** Same license as OpenStreetMap, which the map already follows. |
+| OpenSky Network | Terms of use, read 2026-11-10: the REST API is for "non-profit research and educational use only," and use "in any operational capacity — including but not limited to integration into a live product, service, or automated system — requires a written license," even for non-profits. They also bar passing the data on. | **Not used** without a written license from contact[at]opensky-network.org. |
+| adsb.fi | "personal, non-commercial use only." | Not used. |
+| airplanes.live | Terms page refuses automated reading. | Not checked. |
+
+The upstream request is one small function, so OpenSky can replace adsb.lol if it
+ever grants a license.
 
 ## The main risk: coverage
 
 Public flight data comes from volunteers' ADS-B receivers. A plane on final
 approach is low, and Imphal sits in a valley ringed by hills, so a receiver has to
-be close to hear it. FlightAware lists VEIM in its "secondary service area," and I
-found no published feeder count or coverage map for Manipur. We may get planes at
-cruise and lose them on approach, which is the part worth drawing.
-
-So the first step measures coverage, and the rest depends on the result.
-
-## Sources
-
-Read 2026-11-09.
-
-| Source | Terms found | Limits | Fit |
-|---|---|---|---|
-| OpenSky Network | Live data for commercial use needs contact; publications should cite OpenSky. Its terms page refused automated reading, so **read it by hand before use**. | OAuth2 client. 400 credits a day anonymous, 4,000 with an account, 8,000 for an active feeder. A box under 25 square degrees costs 1 credit. Resolution 10 s anonymous, 5 s with an account. | Best documented. Polling every 30 s uses 2,880 credits a day. |
-| adsb.fi | Personal, non-commercial use only; must cite adsb.fi and link to it. Says nothing on public websites. | 1 request a second. `/v3/lat/{lat}/lon/{lon}/dist/{nm}`. | Usable only if a public, non-commercial site counts. Ask them. |
-| adsb.lol | Its feeder API and historical data are ODbL 1.0. Terms for the public API are not stated. | Dynamic rate limits; API keys are planned. | Promising license, unclear for this use. Ask them. |
-| airplanes.live | Page refused automated reading; unverified. | Unverified. | Check by hand. |
-
-Recommended: OpenSky first, once its terms are read by hand.
-
-## Steps
-
-1. **Measure (go or no-go).** Register the source in `docs/DATA.md`, then log every
-   aircraft within 40 km of the airport for 48 hours. Count how many arrivals stay
-   visible below 1,500 m above the field.
-2. **If coverage is poor,** choose between a local receiver and stopping. A
-   receiver near the airport also earns OpenSky's feeder credits. It needs a check
-   of India's rules on radio receivers, which I have not done. Animating planes
-   from a timetable is possible, but it would have to be labeled as not live.
-3. **Sprites.** Draw a small airliner in eight headings, with a ground shadow,
-   and render options for you to choose from.
-4. **Proxy.** Add a Cloudflare Worker route that holds the OAuth secret, caches one
-   upstream response for about 30 s for all visitors, and passes on only the fields
-   the map needs. The site is static today, so this is its first server code.
-5. **Viewer.** Draw planes on a canvas layer like the water's. Place them with the
-   map's projection, lift them by altitude, and put the shadow on the ground.
-   Interpolate between polls so that motion stays smooth. The runway (OSM way
-   44884414, 04/22, 2,746 m) is inside the Imphal map.
-6. **Credits.** Add the source to the credits panel and `/about.html`.
+be close to hear it. We may see planes at cruise and lose them on approach, which
+is the part worth drawing. A logger measures this before anything is published.
 
 ## Decided
 
-Brajeshwar decided both on 2026-11-10.
+Brajeshwar decided these on 2026-11-10.
 
-- **Airline flights only.** The Worker keeps an aircraft only when its callsign
-  starts with the ICAO code of an airline on a short allowlist (IndiGo `IGO`, Air
-  India `AIC`, Air India Express `AXB`, and others that serve Imphal), followed by
-  a flight number. Everything else, including aircraft with no callsign, is dropped
-  on the server and never reaches a browser. The 48-hour log in step 1 is private
-  and records everything, so the allowlist can be checked against what flies.
-- **A two-minute delay.** The Worker asks OpenSky for positions as they were two
-  minutes ago, using the `time` parameter of `/states/all`, so it needs no storage.
-  OpenSky documents that parameter for times up to an hour in the past; step 1
-  confirms it works for our account. Planes are therefore drawn where they were two
-  minutes earlier, and the map says so.
+- **Airline flights only.** An aircraft is kept only when its callsign starts with
+  the ICAO code of an airline on a short allowlist (IndiGo `IGO`, Air India `AIC`,
+  Air India Express `AXB`, SpiceJet `SEJ`, Alliance Air `LLR`, Akasa `AKJ`)
+  followed by a flight number, and it is not flagged military. Everything else is
+  dropped on the server and never reaches a browser. The private log records
+  everything, so the allowlist can be checked against what flies.
+- **A two-minute delay.** adsb.lol has no way to ask for the past, so the server
+  keeps the last few minutes of positions and serves the ones from two minutes ago,
+  with the next ones so the viewer can move planes smoothly between two real
+  points. The map says the planes are two minutes behind.
+- **Polling by need.** Every 5 minutes while no airline flight is within 150 km of
+  the airport, every 20 seconds while one is.
+
+## How it works
+
+1. **Logger** (`tools/log_aircraft.py`): the same polling, run locally, writing
+   every aircraft within 150 km to `data/raw/aircraft/`, which is not committed.
+2. **Server:** a Cloudflare Worker with one Durable Object. Its alarm is the poller;
+   it stores timestamped snapshots, filters them, and keeps about five minutes.
+   `/api/aircraft` returns the snapshot at least two minutes old and the one after
+   it, cached at the edge for a few seconds so visitors share one read. Only
+   callsign, position, altitude, track, speed, and time are served.
+3. **Viewer:** a canvas layer like the water's, under the Animation switch. Planes
+   are placed with the map's projection, lifted by altitude, and cast a shadow on
+   the ground. The runway (OSM way 44884414, 04/22, 2,746 m) is on the map.
+4. **Credits:** adsb.lol in the credits panel, `/about.html`, and the API response.
 
 ## Decisions for Brajeshwar
 
-- **Whether a local receiver is on the table,** if step 1 fails.
-- **The plane sprite,** once options are rendered.
+- **The plane sprite,** from the rendered options.
+- **What to do if coverage is poor:** a local receiver near the airport (needs a
+  check of India's rules on radio receivers), planes from the timetable labeled as
+  not live, or stopping.
+- **Deploying the Worker,** the site's first server code.
 
 ## Sources read
 
+- [adsb.lol API](https://www.adsb.lol/docs/open-data/api) and [API repository](https://github.com/adsblol/api)
+- [OpenSky terms of use](https://opensky-network.org/about/terms-of-use)
 - [OpenSky REST API](https://openskynetwork.github.io/opensky-api/rest.html)
 - [adsb.fi open data](https://github.com/adsbfi/opendata)
-- [adsb.lol feeder API](https://www.adsb.lol/docs/feeders-only/re-api/) and [API repository](https://github.com/adsblol/api)
 - [FlightAware VEIM](https://flightaware.com/live/airport/VEIM)

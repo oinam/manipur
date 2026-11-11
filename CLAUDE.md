@@ -61,6 +61,8 @@ uv run manipur render --area kangla      # writes frame and full renders to out/
 uv run manipur swatches --area kangla    # writes the candidate palette sheet to out/<area>/
 uv run manipur detail --area kangla-sw   # writes the near-final 900 px crop to out/<area>/
 uv run python tools/draw_sprites.py      # redraws the landmark sprites in assets/sprites/
+uv run python tools/phumdi_options.py    # writes the phumdi style sheet to out/loktak/
+uv run python tools/sangai_options.py    # writes the Sangai sprite sheet to out/loktak/
 uv run manipur overview --area manipur  # writes a top-down state check from land cover and terrain to out/manipur/
 uv run manipur frames --area imphal      # renders all 24 views as seamless 2048 px frames
 uv run manipur tile   --area imphal      # builds each view's Deep Zoom pyramid and the search index

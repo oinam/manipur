@@ -1,5 +1,6 @@
 import { createReadStream, statSync } from "node:fs";
 import { extname, join, normalize } from "node:path";
+import process from "node:process";
 import { defineConfig } from "vite";
 
 // Both local servers pass the aircraft API to `wrangler dev` on port 8790 (`mise run api`),
@@ -7,7 +8,8 @@ import { defineConfig } from "vite";
 // serves the built map, whose tiles are linked into dist; the dev server serves them
 // straight from the render output.
 const API = { "/api": "http://localhost:8790" };
-const TILES = join(import.meta.dirname, "../out/imphal/tiles");
+// MAP_AREA picks another rendered area, such as `valley`, while it is being built.
+const TILES = join(import.meta.dirname, "../out", process.env.MAP_AREA ?? "imphal", "tiles");
 const TYPES = {
   ".json": "application/json",
   ".webp": "image/webp",

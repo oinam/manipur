@@ -2,6 +2,7 @@ import OpenSeadragon from "openseadragon";
 import { startAircraft, toImage, type AircraftLayer } from "./aircraft";
 import { startInfo } from "./info";
 import { liveFeed } from "./live";
+import { startSangai } from "./sangai";
 import { simulatedArrival } from "./simulation";
 import { timetableFeed } from "./timetable";
 import { TILE_BASE } from "./tiles";
@@ -88,6 +89,8 @@ const SHORTCUTS: [string, string, number][] = [
   ["Shija Hospitals", "Shija Hospitals and Research Institute, Langol", SHORTCUT_ZOOM],
   ["Manipur University", "Manipur University", 0.6],
   ["War Cemetery", "Imphal War Cemetery", SHORTCUT_ZOOM],
+  ["Loktak", "Thanga", 0.15],
+  ["Keibul Lamjao", "Sangai viewpoint", 0.6],
 ];
 
 function byId<T extends HTMLElement>(id: string, type: new () => T): T {
@@ -301,6 +304,7 @@ viewer.addHandler("open", () => {
       const feeds = AIRCRAFT_DEMO ? [simulatedArrival] : [liveFeed, timetableFeed];
       aircraft = startAircraft(viewer, () => viewData(currentView), feeds);
     }
+    startSangai(viewer, () => viewData(currentView), byId("animation", HTMLInputElement));
     startInfo(focusFlight);
     viewer.addHandler("animation-finish", writeHash);
     viewer.addHandler("animation-finish", updateLabels);

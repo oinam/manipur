@@ -44,6 +44,9 @@ from manipur.render import (
 )
 
 CROP_CENTER = (93.93759, 24.80343)
+# Areas whose detail crop is somewhere other than Kangla, as (lon, lat): the edge of the
+# phumdis in Keibul Lamjao National Park, near the Sangai viewpoint.
+CROP_CENTERS = {"loktak": (93.8160, 24.4790)}
 CROP_PX = 900
 PROJECTION = PROJECTION_B
 # The chosen projection turned in 15 degree steps, named for the turn from the default.
@@ -120,6 +123,14 @@ FRAME_PX = 2048
 # Wider than the tallest building's lift, the ground blur, and any sprite, so frames join exactly.
 APRON_PX = 256
 WORKERS = 5
+# How phumdis are drawn: "flat" mats, "mats" with pools, or "rings", which adds the
+# circular athaphum fish enclosures in open water. Brajeshwar chose "rings" on 2026-11-11.
+PHUMDI_STYLE = "rings"
+# Water polygons this large are lakes, where land cover decides open water and phumdi.
+LAKE_MIN_M2 = 1_000_000
+ATHAPHUM_SPACING_M = 150.0
+ATHAPHUM_ODDS = 0.3
+ATHAPHUM_WIDTH_M = 3.0
 PADDY_ANGLE = math.radians(17)
 PADDY_LENGTH_M = 44.0
 PADDY_WIDTH_M = 28.0
@@ -335,6 +346,72 @@ def _paint_water(canvas: np.ndarray, layers: Layers, view: Viewport) -> None:
     above = np.roll(wet, 2, axis=0)
     above[:2, :] = False
     canvas[wet & ~above] = SLOTS_32["water_dark"]
+
+
+def _paint_open_water(canvas: np.ndarray, wet: np.ndarray, xs, ys) -> None:
+    canvas[wet] = SLOTS_32["water"]
+    ripple = (ys % 6 == 0) & (xs % 11 < 6) & (hash_field(xs // 11, ys, 21) < 0.3)
+    canvas[wet & ripple] = SLOTS_32["water_light"]
+
+
+def _athaphum_rings(view: Viewport) -> list:
+    """Circular fish enclosures of phumdi, on a world-anchored lattice so frames agree."""
+    left, bottom, right, top = _view_quad(view).bounds
+    step = ATHAPHUM_SPACING_M
+    columns = np.arange(math.floor(left / step), math.ceil(right / step) + 1)
+    rows = np.arange(math.floor(bottom / step), math.ceil(top / step) + 1)
+    grid_c, grid_r = np.meshgrid(columns, rows)
+    roll = hash_field(grid_c, grid_r, 41)
+    size = hash_field(grid_c, grid_r, 42)
+    jitter_x = hash_field(grid_c, grid_r, 43) - 0.5
+    jitter_y = hash_field(grid_c, grid_r, 44) - 0.5
+    rings = []
+    for index in np.flatnonzero(roll.ravel() < ATHAPHUM_ODDS):
+        x = (grid_c.ravel()[index] + 0.5 + jitter_x.ravel()[index] * 0.4) * step
+        y = (grid_r.ravel()[index] + 0.5 + jitter_y.ravel()[index] * 0.4) * step
+        radius = 14.0 + size.ravel()[index] * 16.0
+        center = Point(x, y)
+        rings.append(
+            (center.buffer(radius).difference(center.buffer(radius - ATHAPHUM_WIDTH_M)), 1)
+        )
+    return rings
+
+
+def _paint_phumdi(
+    canvas: np.ndarray, layers: Layers, surfaces: gpd.GeoDataFrame, view: Viewport
+) -> None:
+    """Redraw lakes and phumdi areas as open water and floating mats, by land cover."""
+    zone = [g for g in layers.water.geometry if g.area >= LAKE_MIN_M2]
+    zone += list(surfaces[surfaces.kind == "phumdi"].geometry)
+    inside = _burn([(g, 1) for g in zone], view).astype(bool)
+    if not inside.any():
+        return
+    xs, ys = _global_grid(view)
+    open_cells = [(row.geometry, 1) for row in layers.ground.itertuples() if row.ground == "water"]
+    openness = _box_blur(_burn(open_cells, view).astype("float32"), BLUR_RADIUS_PX // 2)
+    noise = hash_field(xs // 3, ys // 3, 31)
+    wet = inside & (openness + (noise - 0.5) * 0.3 > 0.5)
+    if PHUMDI_STYLE in ("mats", "rings"):
+        swirl = _box_blur(hash_field(xs // 10, ys // 10, 32), 12)
+        wet |= inside & (swirl < 0.43)
+    mat = inside & ~wet
+    if PHUMDI_STYLE == "rings":
+        rings = _burn(_athaphum_rings(view), view).astype(bool) & wet
+        mat |= rings
+        wet &= ~rings
+
+    _paint_open_water(canvas, wet, xs, ys)
+    canvas[mat] = SLOTS_32["wetland"]
+    tuft = hash_field(xs, ys, 33)
+    canvas[mat & (tuft < 0.16)] = SLOTS_32["grass"]
+    canvas[mat & (tuft > 0.95)] = SLOTS_32["shrub"]
+    # A mat sits a little above the water: dark under its lower edge, a lit lip on top.
+    below = np.roll(wet, -1, axis=0)
+    below[-1, :] = False
+    canvas[mat & below] = SLOTS_32["shrub"]
+    above = np.roll(mat, 1, axis=0)
+    above[0, :] = False
+    canvas[wet & above] = SLOTS_32["water_dark"]
 
 
 def _dashes(line: LineString, on_m: float = 4.0, off_m: float = 6.0) -> list:
@@ -1640,6 +1717,7 @@ def render_detail(scene: Scene, view: Viewport) -> np.ndarray:
         clearing = Point(landmark["x"], landmark["y"]).buffer(landmark["clearing"] * 0.6)
         canvas[_burn([(clearing, 1)], view).astype(bool)] = SLOTS_32["bare"]
     _paint_water(canvas, local, view)
+    _paint_phumdi(canvas, local, surfaces, view)
     _paint_roads(canvas, local, view)
 
     items: list = []
@@ -1695,7 +1773,7 @@ def save_slots(slots: np.ndarray, path: Path) -> None:
 def detail(area: Area) -> None:
     scene = load_scene(area)
     to_metric = Transformer.from_crs(4326, METRIC_CRS, always_xy=True)
-    x, y = to_metric.transform(*CROP_CENTER)
+    x, y = to_metric.transform(*CROP_CENTERS.get(area.name, CROP_CENTER))
     view = centered_viewport(PROJECTION, x, y, CROP_PX, CROP_PX)
     target = Path("out") / area.name
     target.mkdir(parents=True, exist_ok=True)

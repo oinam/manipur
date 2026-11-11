@@ -39,6 +39,16 @@ AREAS = {
         osm_extract="asia/india/north-eastern-zone",
         height_res_m=2.0,
     ),
+    # Loktak Lake with Keibul Lamjao National Park and Moirang, the first step into the valley.
+    "loktak": Area(
+        "loktak",
+        24.42,
+        93.74,
+        24.62,
+        93.90,
+        osm_extract="asia/india/north-eastern-zone",
+        height_res_m=2.0,
+    ),
     # The whole state; only `overview` reads it so far.
     "manipur": Area(
         "manipur", 23.83, 93.03, 25.68, 94.78, osm_extract="asia/india/north-eastern-zone"

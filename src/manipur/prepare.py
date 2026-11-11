@@ -157,8 +157,18 @@ def water_polygons(features: list[Feature]) -> gpd.GeoDataFrame:
     return _to_metric(rows, [f.geometry for f in chosen])
 
 
+def _is_phumdi(tags: dict[str, str]) -> bool:
+    """Floating mats on Loktak, and Keibul Lamjao, the national park made of them."""
+    named = "phum" in tags.get("name", "").lower()
+    return (
+        tags.get("wetland") == "phumdi"
+        or tags.get("boundary") == "national_park"
+        or (named and tags.get("natural") in ("wetland", "grassland"))
+    )
+
+
 def surfaces(features: list[Feature]) -> gpd.GeoDataFrame:
-    """Return paved airfield areas and sports grounds as polygons."""
+    """Return paved airfield areas, sports grounds, cemeteries, and phumdis as polygons."""
     rows, geometries, widths = [], [], []
     for feature in features:
         tags = feature.tags
@@ -176,6 +186,8 @@ def surfaces(features: list[Feature]) -> gpd.GeoDataFrame:
                 kind = "pitch"
             elif tags.get("landuse") == "cemetery":
                 kind = "cemetery"
+            elif _is_phumdi(tags):
+                kind = "phumdi"
             else:
                 continue
             rows.append({"kind": kind})

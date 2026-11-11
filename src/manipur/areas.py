@@ -49,6 +49,16 @@ AREAS = {
         osm_extract="asia/india/north-eastern-zone",
         height_res_m=2.0,
     ),
+    # Imphal down to Loktak, one canvas for the site from Phase 3 on.
+    "valley": Area(
+        "valley",
+        24.42,
+        93.74,
+        24.86,
+        94.00,
+        osm_extract="asia/india/north-eastern-zone",
+        height_res_m=2.0,
+    ),
     # The whole state; only `overview` reads it so far.
     "manipur": Area(
         "manipur", 23.83, 93.03, 25.68, 94.78, osm_extract="asia/india/north-eastern-zone"

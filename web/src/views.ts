@@ -3,6 +3,8 @@ export interface View {
   matrix: [number, number, number, number];
   x_offset: number;
   y_offset: number;
+  // Added to image pixels to give a link's pixels, which stay in the original Imphal canvas.
+  hash_shift?: [number, number];
 }
 
 export const DEFAULT_VIEW = "0";

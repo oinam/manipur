@@ -54,6 +54,12 @@ def run_overview(area: Area) -> None:
     overview(area)
 
 
+def run_build(area: Area) -> None:
+    from manipur.tile import build
+
+    build(area)
+
+
 def run_tile(area: Area) -> None:
     from manipur.tile import tile
 
@@ -69,6 +75,7 @@ STAGES: dict[str, Callable[[Area], None]] = {
     "detail": run_detail,
     "frames": run_frames,
     "tile": run_tile,
+    "build": run_build,
     "overview": run_overview,
 }
 

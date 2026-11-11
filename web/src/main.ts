@@ -117,6 +117,13 @@ function imageZoomToViewport(zoom: number): number {
   return viewer.viewport.imageToViewportZoom(zoom);
 }
 
+// Links, and the targets written here, keep pixel positions in the original Imphal canvas
+// so that links shared before the map grew still land in the same place.
+function fromLink(target: Target): Target {
+  const [dx, dy] = viewData(target.view).hash_shift ?? [0, 0];
+  return { ...target, x: target.x - dx, y: target.y - dy };
+}
+
 function readHash(): Target | null {
   const parts = location.hash.slice(1).split("/");
   const [zoom = NaN, x = NaN, y = NaN] = parts.slice(0, 3).map(Number);
@@ -139,9 +146,10 @@ function viewCenter(): OpenSeadragon.Point {
 
 function viewHash(): string {
   const center = viewCenter();
+  const [dx, dy] = viewData(currentView).hash_shift ?? [0, 0];
   const zoom = viewer.viewport.viewportToImageZoom(viewer.viewport.getZoom());
   const suffix = currentView === DEFAULT_VIEW ? "" : `/${currentView}`;
-  return `#${zoom.toFixed(3)}/${Math.round(center.x)}/${Math.round(center.y)}${suffix}`;
+  return `#${zoom.toFixed(3)}/${Math.round(center.x + dx)}/${Math.round(center.y + dy)}${suffix}`;
 }
 
 function writeHash(): void {
@@ -182,6 +190,7 @@ function updateCorrectionLink(): void {
 const correctionLink = byId("correction", HTMLAnchorElement);
 const needle = byId("needle", HTMLElement);
 let views: Record<string, View> = {};
+let areaName = "imphal";
 let currentView = DEFAULT_VIEW;
 let pendingTarget: Target | null = null;
 let still: HTMLCanvasElement | null = null;
@@ -239,7 +248,7 @@ function openView(target: Target): void {
   // Opening clears the overlays, so the labels and marker are rebuilt or dropped.
   labels.length = 0;
   marker = null;
-  viewer.open(`${TILE_BASE}pyramid/${viewData(target.view).pyramid}/imphal.dzi`);
+  viewer.open(`${TILE_BASE}pyramid/${viewData(target.view).pyramid}/${areaName}.dzi`);
 }
 
 // Keeps the last frame on screen until the next view's tiles arrive.
@@ -301,10 +310,11 @@ viewer.addHandler("open", () => {
 });
 
 window.addEventListener("hashchange", () => {
-  const target = readHash();
-  if (!target) {
+  const link = readHash();
+  if (!link) {
     return;
   }
+  const target = fromLink(link);
   if (target.view === currentView) {
     goTo(target.x, target.y, target.zoom, false);
   } else {
@@ -385,8 +395,9 @@ function zoomBy(factor: number): void {
 
 // Home is the opening view, near enough to read the city, in whichever way it faces now.
 function goHome(): void {
-  const [x, y] = toCurrentView(OPENING_VIEW.x, OPENING_VIEW.y);
-  goTo(x, y, OPENING_VIEW.zoom, false);
+  const opening = fromLink(OPENING_VIEW);
+  const [x, y] = toCurrentView(opening.x, opening.y);
+  goTo(x, y, opening.zoom, false);
 }
 
 function panBy(dx: number, dy: number): void {
@@ -449,9 +460,10 @@ let places: Place[] = [];
 
 fetch(MANIFEST)
   .then((response) => response.json())
-  .then((manifest: { views: Record<string, View> }) => {
+  .then((manifest: { area?: string; views: Record<string, View> }) => {
     views = manifest.views;
-    openView(readHash() ?? (AIRCRAFT_DEMO ? DEMO_OPENING_VIEW : OPENING_VIEW));
+    areaName = manifest.area ?? areaName;
+    openView(fromLink(readHash() ?? (AIRCRAFT_DEMO ? DEMO_OPENING_VIEW : OPENING_VIEW)));
   })
   .catch((error: unknown) => {
     console.error("Tile manifest failed to load", error);

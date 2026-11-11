@@ -6,17 +6,22 @@ import shutil
 from pathlib import Path
 
 import geopandas as gpd
+import numpy as np
 import pyvips
 from pyproj import Transformer
 
 from manipur.areas import Area
 from manipur.detail import (
+    DEFAULT_VIEW,
     LANDMARKS_PATH,
     PROJECTION,
     SPRITE_DIR,
     VIEWS,
+    _render_view,
     frames_dir,
+    load_scene,
     manifest_path,
+    trees_path,
 )
 from manipur.prepare import METRIC_CRS, derived_path
 
@@ -28,6 +33,10 @@ NOTABLE_KINDS = {"landmark", "university"}
 NOTABLE_NAMES = {"Kangla Palace", "Imphal War Cemetery", "Imphal Indian War Cemetary"}
 TILE_SUFFIX = ".webp[lossless=true,effort=4]"
 PYRAMID_DIR = "pyramid"
+VIEWS_RECORD = "views.json"
+# Each view's canvas offsets for the original Imphal map. Share links keep their pixel
+# positions in that canvas, and each view records the shift to its own.
+HASH_ORIGIN = Path("assets/hash_origin.json")
 FLOW_SIMPLIFY_M = 6.0
 
 
@@ -146,6 +155,8 @@ def _build_pyramid(area: Area, view: str, target: Path, manifest: dict) -> str:
     joined = pyvips.Image.arrayjoin(images, across=columns)
     version = pyramid_version(paths, columns)
     pyramid = target / PYRAMID_DIR / version
+    # A build stopped partway through leaves an unfinished pyramid; start it again.
+    shutil.rmtree(pyramid, ignore_errors=True)
     pyramid.mkdir(parents=True)
     joined.dzsave(
         str(pyramid / area.name),
@@ -158,20 +169,22 @@ def _build_pyramid(area: Area, view: str, target: Path, manifest: dict) -> str:
     return version
 
 
-def tile(area: Area) -> None:
-    target = tiles_dir(area)
-    if target.exists():
-        shutil.rmtree(target)
-    views = {}
-    for view in VIEWS:
-        manifest = json.loads(manifest_path(area, view).read_text())
-        views[view] = {
-            "pyramid": _build_pyramid(area, view, target, manifest),
-            "matrix": manifest["matrix"],
-            "x_offset": manifest["x_offset"],
-            "y_offset": manifest["y_offset"],
-        }
+def _view_entry(area: Area, view: str, target: Path) -> dict:
+    """Build one view's pyramid and return what the viewer needs to place it."""
+    manifest = json.loads(manifest_path(area, view).read_text())
+    entry = {
+        "pyramid": _build_pyramid(area, view, target, manifest),
+        "matrix": manifest["matrix"],
+        "x_offset": manifest["x_offset"],
+        "y_offset": manifest["y_offset"],
+    }
+    origin = json.loads(HASH_ORIGIN.read_text()).get(view)
+    if origin:
+        entry["hash_shift"] = [origin[0] - manifest["x_offset"], origin[1] - manifest["y_offset"]]
+    return entry
 
+
+def _write_indexes(area: Area, target: Path, views: dict) -> None:
     # Search and flow are written in the default view; the viewer converts them for the others.
     manifest = json.loads(manifest_path(area).read_text())
     entries = search_index(area, manifest["x_offset"], manifest["y_offset"])
@@ -181,3 +194,35 @@ def tile(area: Area) -> None:
     (target / "flow.json").write_text(json.dumps(flow))
     (target / "manifest.json").write_text(json.dumps({**manifest, "views": views}))
     print(f"{len(entries)} search entries")
+
+
+def tile(area: Area) -> None:
+    target = tiles_dir(area)
+    if target.exists():
+        shutil.rmtree(target)
+    views = {view: _view_entry(area, view, target) for view in VIEWS}
+    _write_indexes(area, target, views)
+
+
+def build(area: Area, only: list[str] | None = None) -> None:
+    """Render and tile one view at a time, then delete its frames, so the disk never holds
+    more than the finished tiles and one view's frames. The default view's frames stay for
+    the option sheets. Picks up after the last finished view if stopped."""
+    target = tiles_dir(area)
+    target.mkdir(parents=True, exist_ok=True)
+    record = target / VIEWS_RECORD
+    views = json.loads(record.read_text()) if record.exists() else {}
+    scene = None
+    for view in only or VIEWS:
+        if view in views:
+            continue
+        if scene is None:
+            scene = load_scene(area)
+            np.save(trees_path(area), scene.trees)
+        _render_view(area, scene, view)
+        views[view] = _view_entry(area, view, target)
+        record.write_text(json.dumps(views, indent=2) + "\n")
+        if view != DEFAULT_VIEW:
+            shutil.rmtree(frames_dir(area, view))
+    if all(view in views for view in VIEWS):
+        _write_indexes(area, target, {view: views[view] for view in VIEWS})

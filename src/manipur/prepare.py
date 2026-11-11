@@ -242,9 +242,14 @@ def duplicate_mask(
 
 def mostly_on_mask(open_buildings: gpd.GeoDataFrame, area: shapely.Geometry) -> np.ndarray:
     """Flag polygons mostly on an area where no building can stand, such as water."""
-    geometries = open_buildings.geometry.values
-    covered = shapely.area(shapely.intersection(geometries, area)) / shapely.area(geometries)
-    return covered >= WATER_COVERED
+    geometries = np.asarray(open_buildings.geometry.values)
+    # Only the pieces of the area a polygon touches; clipping the whole of a large lake and
+    # every river against each of half a million footprints takes hours.
+    parts = shapely.get_parts(area)
+    index, part = shapely.STRtree(parts).query(geometries, predicate="intersects")
+    shared = shapely.area(shapely.intersection(geometries[index], parts[part]))
+    covered = np.bincount(index, weights=shared, minlength=len(geometries))
+    return covered / shapely.area(geometries) >= WATER_COVERED
 
 
 def sample_heights(buildings: gpd.GeoDataFrame, raster_path: Path) -> np.ndarray:

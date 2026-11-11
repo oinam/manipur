@@ -68,12 +68,28 @@
     </div>
 
     <section id="info" class="panel info" aria-label="Places and airplanes">
-      <h2>Go to</h2>
-      <div id="shortcuts" class="shortcuts"></div>
-      <h2 id="info-title">Airplanes (Today)</h2>
-      <div id="info-body">
-        <div id="flights"></div>
-        <p id="flights-note" class="note"></p>
+      <div class="info-bar">
+        <div class="tabs" role="tablist" aria-label="Info">
+          <button id="tab-places" type="button" role="tab" aria-controls="places-tab">Go to</button>
+          <button id="tab-planes" type="button" role="tab" aria-controls="planes-tab">
+            Airplanes
+          </button>
+        </div>
+        <button id="info-collapse" class="collapse" type="button" aria-controls="info-tabs">
+          <span aria-hidden="true">▾</span>
+        </button>
+      </div>
+      <div id="info-tabs">
+        <div id="places-tab" role="tabpanel" aria-labelledby="tab-places">
+          <div id="shortcuts" class="shortcuts"></div>
+        </div>
+        <div id="planes-tab" role="tabpanel" aria-labelledby="tab-planes" hidden>
+          <h2 id="info-title">Today</h2>
+          <div id="info-body">
+            <div id="flights"></div>
+            <p id="flights-note" class="note"></p>
+          </div>
+        </div>
       </div>
     </section>
 

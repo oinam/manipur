@@ -134,14 +134,66 @@ button:focus-visible,
   font-size: 13px;
 }
 
-.info h2 {
-  margin: 0;
-  padding: 8px 12px 4px;
-  font-size: 13px;
-  font-weight: 600;
+.info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 4px 0 8px;
+  border-bottom: 1px solid var(--line);
 }
 
-.info h2 + .shortcuts {
+.info.collapsed .info-bar {
+  padding-bottom: 4px;
+  border-bottom: 0;
+}
+
+.tabs {
+  display: flex;
+}
+
+.tabs button,
+.info .collapse {
+  padding: 4px 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tabs button[aria-selected="true"] {
+  border-bottom-color: #8db9cd;
+  color: var(--ink);
+}
+
+.info.collapsed .tabs button {
+  border-bottom-color: transparent;
+}
+
+.info .collapse span {
+  display: inline-block;
+  transition: transform 0.2s;
+}
+
+.info.collapsed .collapse span {
+  transform: rotate(180deg);
+}
+
+#places-tab {
+  padding: 8px 12px;
+}
+
+.info h2 {
+  margin: 0;
+  padding: 8px 12px 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.shortcuts {
   padding: 0 12px 8px;
 }
 

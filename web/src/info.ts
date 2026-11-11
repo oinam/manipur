@@ -1,6 +1,7 @@
 // The info panel at the bottom left, shown and hidden by the plane button among the controls.
-// Below its places to go to is today's timetable at Imphal, marking the flights OpenSky heard
-// nearby. Without a timetable it lists what OpenSky saw instead.
+// It has tabs, and collapses to just them. One tab holds places to go to; the other holds
+// today's timetable at Imphal, marking the flights OpenSky heard nearby, or without a
+// timetable what OpenSky saw instead.
 
 interface Flight {
   callsign: string;
@@ -27,6 +28,7 @@ interface Schedule {
 const API = "/api/aircraft";
 const RELOAD_MS = 60_000;
 const COLLAPSED_KEY = "info-collapsed";
+const TAB_KEY = "info-tab";
 const TIME = new Intl.DateTimeFormat("en-IN", {
   timeZone: "Asia/Kolkata",
   hour: "2-digit",
@@ -60,21 +62,75 @@ function element<T extends HTMLElement>(id: string, type: new () => T): T {
   return found;
 }
 
-function remembered(): boolean | null {
+function remembered(key: string): string | null {
   try {
-    const value = localStorage.getItem(COLLAPSED_KEY);
-    return value === null ? null : value === "true";
+    return localStorage.getItem(key);
   } catch {
     return null;
   }
 }
 
-function remember(collapsed: boolean): void {
+function remember(key: string, value: string): void {
   try {
-    localStorage.setItem(COLLAPSED_KEY, String(collapsed));
+    localStorage.setItem(key, value);
   } catch {
     // the panel still works; it just opens in its default state next time
   }
+}
+
+// Tabs that select on click, collapse the panel when the open one is clicked again, and move
+// with the arrow keys.
+function startTabs(panel: HTMLElement): void {
+  const body = element("info-tabs", HTMLDivElement);
+  const collapse = element("info-collapse", HTMLButtonElement);
+  const tabs = [...panel.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+  const pane = (tab: HTMLButtonElement) =>
+    element(tab.getAttribute("aria-controls") ?? "", HTMLElement);
+
+  const setCollapsed = (collapsed: boolean) => {
+    body.hidden = collapsed;
+    panel.classList.toggle("collapsed", collapsed);
+    const label = collapsed ? "Expand the panel" : "Collapse the panel";
+    collapse.setAttribute("aria-expanded", String(!collapsed));
+    collapse.setAttribute("aria-label", label);
+    collapse.title = label;
+    remember(COLLAPSED_KEY, String(collapsed));
+  };
+  const choose = (chosen: HTMLButtonElement) => {
+    for (const tab of tabs) {
+      const selected = tab === chosen;
+      tab.setAttribute("aria-selected", String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+      pane(tab).hidden = !selected;
+    }
+    remember(TAB_KEY, chosen.id);
+  };
+
+  for (const [index, tab] of tabs.entries()) {
+    tab.addEventListener("click", () => {
+      const open = tab.getAttribute("aria-selected") === "true" && !body.hidden;
+      choose(tab);
+      setCollapsed(open);
+    });
+    tab.addEventListener("keydown", (event) => {
+      const step = { ArrowLeft: -1, ArrowRight: 1 }[event.key];
+      if (step) {
+        const next = tabs[(index + step + tabs.length) % tabs.length];
+        if (next) {
+          choose(next);
+          next.focus();
+        }
+      }
+    });
+  }
+  collapse.addEventListener("click", () => {
+    setCollapsed(!body.hidden);
+  });
+  const first = tabs.find((tab) => tab.id === remembered(TAB_KEY)) ?? tabs[0];
+  if (first) {
+    choose(first);
+  }
+  setCollapsed(remembered(COLLAPSED_KEY) === "true");
 }
 
 function describe(flight: Flight): string {
@@ -180,19 +236,17 @@ export function startInfo(focus: (callsign?: string) => void): void {
   const note = element("flights-note", HTMLParagraphElement);
   const title = element("info-title", HTMLHeadingElement);
 
-  const setCollapsed = (collapsed: boolean) => {
-    panel.hidden = collapsed;
-    toggle.setAttribute("aria-expanded", String(!collapsed));
+  const setHidden = (hidden: boolean) => {
+    panel.hidden = hidden;
+    toggle.setAttribute("aria-expanded", String(!hidden));
   };
-  setCollapsed(remembered() ?? false);
   toggle.addEventListener("click", () => {
-    const collapsed = !panel.hidden;
-    setCollapsed(collapsed);
-    remember(collapsed);
+    setHidden(!panel.hidden);
   });
+  startTabs(panel);
 
   const load = async () => {
-    title.textContent = `Airplanes (Today, ${DATE.format(Date.now())})`;
+    title.textContent = `Today, ${DATE.format(Date.now())}`;
     try {
       const response = await fetch(API);
       if (!response.ok) {

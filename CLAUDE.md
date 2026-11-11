@@ -51,6 +51,11 @@ ignores it), and runs each command below as a task: `mise tasks` lists them, and
 `mise run <task> [area]` runs one, for example `mise run frames` or
 `mise run plan kangla`. Never print or commit the values in `.env`.
 
+On this Mac, `out/` is a link to `/Volumes/2021OCT-5TB/Scratch/manipur/out`, so renders
+and tiles stay off the internal disk and the checkout holds only code and data. The drive
+must be plugged in for anything that reads or writes `out/`. Do not replace the link
+with a folder; the reasoning, and how to move back, are in `docs/DECISIONS.md`.
+
 ```
 mise install && mise run setup           # installs the pinned tools, then both environments
 uv sync                                  # installs the pinned Python 3.12 environment

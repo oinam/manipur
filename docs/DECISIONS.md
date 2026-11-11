@@ -368,3 +368,19 @@ Phumdis are drawn in style C, mats with pools and athaphum rings, inside lakes o
 1 km² and OSM's phumdi and national park areas, with open water where WorldCover says
 water. Herds of Sangai, drawn at three times real size with a dark edge, wander near the
 Sangai viewpoint in Keibul Lamjao.
+
+## 2026-11-11 — Renders live on an external drive
+
+The Mac's disk could not hold the valley's 24 views (about 24 GB of tiles) beside
+everything else, so every render now lives on the external drive, and this checkout keeps
+only code and data. `out/` is a link to `/Volumes/2021OCT-5TB/Scratch/manipur/out`.
+`Scratch` is meant for any project's bulky output. The pipeline, the dev server, and the
+upload all read and write `out/` as before, through the link, so none of them changed.
+`.gitignore` ignores `/out` rather than `out/`, because git sees a link as a file.
+
+Nothing in `out/` is precious: it all rebuilds from `data/raw/`, and the published tiles
+are also in R2. Without the drive plugged in, anything that reads or writes `out/`
+fails; plug it back in and rerun, and `manipur build` resumes from the last finished
+view. On a computer with room to spare, bring the renders back with
+`rm out && rsync -a /Volumes/2021OCT-5TB/Scratch/manipur/out ./`, or simply let `out/` be
+a plain folder and render again.

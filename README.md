@@ -17,10 +17,10 @@ The look and the method owe more to:
 - [isometric.nyc](https://isometric.nyc) by Andy Coenen, with a [write-up](https://cannoneyed.com/projects/isometric-nyc) and [source code](https://github.com/cannoneyed/isometric-nyc).
 - [Pixel Singapore](https://www.yadongxie.com/blog/how-pixel-singapore-was-made) by Yadong Xie.
 - [Isopolis SF](https://sf.isopolis.city/) by lawrencechen.
-- https://tinyvalencia.com
-- https://parisenpixels.fr/
-- https://miniworld.marceloeduardo.com/cidades/
-- https://tinymadrid.app/
+- [Tiny València](https://tinyvalencia.com).
+- [Paris en Pixels](https://parisenpixels.fr/).
+- [Mini Cidades](https://miniworld.marceloeduardo.com/cidades/).
+- [Tiny Madrid](https://tinymadrid.app/).
 
 ## References
 

@@ -126,29 +126,53 @@ button:focus-visible,
 }
 
 .info {
-  top: 16px;
-  right: 66px;
-  width: min(320px, calc(100vw - 98px));
+  bottom: 16px;
+  left: 16px;
+  width: min(340px, calc(100vw - 32px));
   background: rgba(31, 42, 46, 0.62);
   backdrop-filter: blur(6px);
   font-size: 13px;
 }
 
-.info header {
-  padding: 8px 12px;
-}
-
 .info h2 {
   margin: 0;
+  padding: 8px 12px 4px;
   font-size: 13px;
   font-weight: 600;
 }
 
+.info h2 + .shortcuts {
+  padding: 0 12px 8px;
+}
+
+#info-title {
+  border-top: 1px solid var(--line);
+}
+
+.shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.shortcuts button {
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.shortcuts button:hover {
+  background: var(--line);
+}
+
 #info-body {
-  max-height: min(40vh, 300px);
+  max-height: min(32vh, 260px);
   padding: 0 12px 8px;
   overflow-y: auto;
-  border-top: 1px solid var(--line);
 }
 
 #flights h3 {
@@ -214,11 +238,11 @@ button:focus-visible,
   font-size: 12px;
 }
 
+/* The footer wraps on narrow screens, so the panel sits above it. */
 @media (max-width: 700px) {
   .info {
-    top: 64px;
     right: 66px;
-    left: 16px;
+    bottom: 64px;
     width: auto;
   }
 }

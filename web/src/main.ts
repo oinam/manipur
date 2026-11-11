@@ -60,6 +60,21 @@ const DEMO_OPENING_VIEW: Target = { x: 8800, y: 8700, zoom: 0.35, view: DEFAULT_
 const RUNWAY_MIDDLE = { lon: 93.8972, lat: 24.7596 };
 const AIRPORT_ZOOM = 0.35;
 const PLANE_ZOOM = 0.6;
+const SHORTCUT_ZOOM = 0.9;
+// The info panel's places to go to: a short name, the name in the search index, and the
+// zoom that fits the place on screen.
+const SHORTCUTS: [string, string, number][] = [
+  ["Airport", "Bir Tikendrajit International Airport", AIRPORT_ZOOM],
+  ["Kangla", "Kangla Sha", 0.5],
+  ["Ima Keithel", "Ima Keithel", SHORTCUT_ZOOM],
+  ["Govindajee Temple", "Shree Govindajee Temple", SHORTCUT_ZOOM],
+  ["Khuman Lampak", "Khuman Lampak Main Stadium", 0.6],
+  ["RIMS", "Regional Institute of Medical Sciences", SHORTCUT_ZOOM],
+  ["JNIMS", "J.N. Hospital Management Society", SHORTCUT_ZOOM],
+  ["Shija Hospitals", "Shija Hospitals and Research Institute, Langol", SHORTCUT_ZOOM],
+  ["Manipur University", "Manipur University", 0.6],
+  ["War Cemetery", "Imphal War Cemetery", SHORTCUT_ZOOM],
+];
 
 function byId<T extends HTMLElement>(id: string, type: new () => T): T {
   const element = document.getElementById(id);
@@ -419,6 +434,7 @@ fetch(SEARCH_INDEX, { cache: "no-cache" })
     places = entries;
     placeLabelsInView();
     buildLabels();
+    buildShortcuts();
     if (viewer.world.getItemCount()) {
       updateCorrectionLink();
     }
@@ -428,6 +444,27 @@ fetch(SEARCH_INDEX, { cache: "no-cache" })
     input.placeholder = "Search is unavailable";
     input.disabled = true;
   });
+
+function buildShortcuts(): void {
+  const known = new Set(basePlaces.map((place) => place.name));
+  byId("shortcuts", HTMLDivElement).replaceChildren(
+    ...SHORTCUTS.filter(([, name]) => known.has(name)).map(([label, name, zoom]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      button.title = name;
+      button.addEventListener("click", () => {
+        // Looked up on click, so it lands right in whichever view is open.
+        const place = places.find((candidate) => candidate.name === name);
+        if (place) {
+          goTo(place.x, place.y, zoom, false);
+          showMarker(place.x, place.y);
+        }
+      });
+      return button;
+    }),
+  );
+}
 
 function renderResults(matches: Place[]): void {
   results.replaceChildren(

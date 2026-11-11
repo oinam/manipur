@@ -1,5 +1,6 @@
-// The info panel beside the controls, shown and hidden by the plane button among them. It starts with today's timetable at Imphal, marking
-// the flights OpenSky saw nearby. Without a timetable it lists what OpenSky saw instead.
+// The info panel at the bottom left, shown and hidden by the plane button among the controls.
+// Below its places to go to is today's timetable at Imphal, marking the flights OpenSky heard
+// nearby. Without a timetable it lists what OpenSky saw instead.
 
 interface Flight {
   callsign: string;
@@ -173,7 +174,7 @@ function renderSightings(container: HTMLElement, flights: Flight[]): void {
 }
 
 export function startInfo(focus: (callsign?: string) => void): void {
-  const toggle = element("planes", HTMLButtonElement);
+  const toggle = element("info-toggle", HTMLButtonElement);
   const panel = element("info", HTMLElement);
   const flights = element("flights", HTMLDivElement);
   const note = element("flights-note", HTMLParagraphElement);

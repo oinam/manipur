@@ -53,7 +53,7 @@ description = "Render all 24 views as seamless 2048 px frames"
 usage = 'arg "[area]" default="valley"'
 run = "uv run manipur frames --area ${usage_area}"
 
-[tasks.build]
+[tasks.map]
 description = "Render and tile one view at a time, deleting frames as it goes; resumes if stopped"
 usage = 'arg "[area]" default="valley"'
 run = "caffeinate -i uv run manipur build --area ${usage_area}"

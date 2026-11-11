@@ -95,6 +95,41 @@ description = "Upload an area's new tile pyramids, then its index files, to R2"
 usage = 'arg "[area]" default="valley"'
 run = "uv run python tools/upload_tiles.py ${usage_area}"
 
+[tasks.upload-night]
+description = "Upload the valley's finished tile pyramids until 5:00, only if started between 22:00 and 5:00; tells you when every view is up"
+quiet = true
+run = '''
+hour=$(date +%H)
+if [ "$hour" -lt 22 ] && [ "$hour" -ge 5 ]; then echo "$(date): outside 22:00 to 5:00, not uploading"; exit 0; fi
+echo "$(date): uploading"
+report=$(uv run python tools/upload_tiles.py valley --pyramids-only --until=05:00 2>&1 | grep -vE "^Uploaded [0-9]+%")
+echo "$report"
+echo "$(date): stopped"
+if echo "$report" | grep -q "every view is on R2"; then
+  osascript -e 'display notification "Every valley view is on R2. Push, then upload the indexes." with title "Manipur map"'
+fi
+'''
+
+[tasks.schedule-on]
+description = "Run `mise run upload-night` every day at 22:00 on this Mac (a launchd agent); log in logs/upload-night.log"
+quiet = true
+run = [
+  "mkdir -p logs ~/Library/LaunchAgents",
+  "cp launchd/com.oinam.manipur.upload.plist ~/Library/LaunchAgents/",
+  "launchctl bootout gui/$(id -u)/com.oinam.manipur.upload 2>/dev/null || true",
+  "launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.oinam.manipur.upload.plist",
+  "echo 'scheduled: every day at 22:00, until 5:00'",
+]
+
+[tasks.schedule-off]
+description = "Stop the 22:00 upload schedule"
+quiet = true
+run = [
+  "launchctl bootout gui/$(id -u)/com.oinam.manipur.upload 2>/dev/null || true",
+  "rm -f ~/Library/LaunchAgents/com.oinam.manipur.upload.plist",
+  "echo 'schedule removed'",
+]
+
 [tasks.log-aircraft]
 description = "Log aircraft near Imphal airport to data/raw/aircraft/ until stopped"
 run = "caffeinate -i uv run python tools/log_aircraft.py"

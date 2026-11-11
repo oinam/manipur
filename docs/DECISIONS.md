@@ -384,3 +384,24 @@ fails; plug it back in and rerun, and `manipur build` resumes from the last fini
 view. On a computer with room to spare, bring the renders back with
 `rm out && rsync -a /Volumes/2021OCT-5TB/Scratch/manipur/out ./`, or simply let `out/` be
 a plain folder and render again.
+
+## 2026-11-11 — Tiles go up overnight, slowly
+
+The valley's 24 views are about 516,000 tile files. `wrangler r2 bulk put` sends each one
+through Cloudflare's API, which allows about four requests a second; at wrangler's
+default of 20 at once, most batches came back "429: Too Many Requests". Brajeshwar would
+rather the upload take days than lean on Cloudflare, so `tools/upload_tiles.py` now sends
+two at a time and paces itself to two files a second, half the limit.
+
+At that pace a view takes about three hours, so the upload runs while Brajeshwar sleeps:
+a launchd agent (`launchd/com.oinam.manipur.upload.plist`, installed with `mise run
+schedule-on`) starts `mise run upload-night` at 22:00, which uploads the finished views'
+pyramids and stops starting batches at 5:00. Started outside that window, as when the Mac
+wakes late, it does nothing. About 50,000 files a night puts the valley up in about ten
+nights. Each run is logged in `logs/upload-night.log`.
+
+Pyramids alone change nothing on the live site, since the manifest does not name them
+yet. When every view is up, the job posts a macOS notification; then push the code, wait
+for the deploy, and run `mise run upload` to send the index files, which switches the site
+over in seconds. That last step stays by hand, because it publishes. `mise run
+schedule-off` removes the agent.

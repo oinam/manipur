@@ -47,8 +47,9 @@ const SIGHTINGS_NOTE =
   "Times in IST, two minutes late, from The OpenSky Network. Its receivers rarely reach the " +
   "valley floor, so most flights show only as passing.";
 const SCHEDULE_NOTE =
-  `Scheduled times in IST from AeroDataBox; airlines may change them. ${SEEN_MARK} marks a ` +
-  "flight OpenSky saw near Imphal, shown on the map two minutes late.";
+  `Scheduled times in IST from AeroDataBox, landing and leaving at Imphal; airlines may change ` +
+  `them. ${SEEN_MARK} marks a flight OpenSky heard within 150 km. Its receivers lose most ` +
+  "flights over the hills, so a plane rarely reaches the map.";
 
 function element<T extends HTMLElement>(id: string, type: new () => T): T {
   const found = document.getElementById(id);

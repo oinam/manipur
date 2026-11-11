@@ -28,6 +28,12 @@ approach is low, and Imphal sits in a valley ringed by hills, so a receiver has 
 be close to hear it. We may see planes at cruise and lose them on approach, which
 is the part worth drawing. A logger measures this before anything is published.
 
+Measured on the morning of 2026-11-11: OpenSky heard nine airline flights, and none came
+closer than 125 km. 6E 6514 from Kolkata, due to land at 08:40 IST, was last heard at
+08:07 IST, 126 km out at 8,400 m. The rendered map covers about 13 km around Imphal, so
+no live plane reached it. The panel's times are the scheduled landing and leaving times
+at Imphal; its tick means only that OpenSky heard the flight within 150 km.
+
 ## Decided
 
 Brajeshwar decided these on 2026-11-10.
@@ -74,7 +80,7 @@ Brajeshwar decided these on 2026-11-10.
    way 44884414, 2,746 m) every five minutes, labeled as simulated
    (`web/src/simulation.ts`). `?aircraft=off` shows no planes.
 4. **Info panel** (`web/src/info.ts`): today's timetable at Imphal from AeroDataBox
-   (`schedule` in the same API), with a tick on flights OpenSky saw nearby. Without a
+   (`schedule` in the same API), with a tick on flights OpenSky heard within 150 km. Without a
    timetable it lists OpenSky's sightings as landed, took off, or passed. In IST,
    refreshed every minute.
 5. **Credits:** OpenSky in the credits panel, `/about.html`, and the API response.

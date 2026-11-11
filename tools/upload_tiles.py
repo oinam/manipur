@@ -7,6 +7,7 @@ index files go last, so the manifest never names a pyramid R2 does not have yet.
 import json
 import os
 import subprocess
+import sys
 import tempfile
 import time
 from itertools import batched
@@ -14,8 +15,9 @@ from pathlib import Path
 
 BUCKET = "manipur-tiles"
 ACCOUNT_ID = "091e65b116deac24fcc274459b6fbde0"
-TILES = Path("out/imphal/tiles").resolve()
-DONE = Path("out/imphal/uploaded-pyramids.json")
+AREA = sys.argv[1] if len(sys.argv) > 1 else "valley"
+TILES = Path("out", AREA, "tiles").resolve()
+DONE = Path("out", AREA, "uploaded-pyramids.json")
 CACHE_CONTROL = "public, max-age=31536000, immutable"
 INDEX_CACHE_CONTROL = "no-cache"
 CONTENT_TYPES = {".webp": "image/webp", ".dzi": "application/xml"}

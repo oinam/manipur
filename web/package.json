@@ -6,7 +6,7 @@
     "dev": "vite",
     "lint": "tsc --noEmit && tsc --noEmit -p worker && eslint . && prettier --check .",
     "format": "prettier --write .",
-    "build": "tsc --noEmit && vite build && ln -sfn ../../out/imphal/tiles dist/tiles",
+    "build": "tsc --noEmit && vite build && ln -sfn ../../out/valley/tiles dist/tiles",
     "deploy": "VITE_TILE_BASE=https://manipur-tiles.oinam.com/ pnpm run build && rm -f dist/tiles && wrangler deploy"
   },
   "dependencies": {

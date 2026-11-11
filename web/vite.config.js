@@ -8,8 +8,8 @@ import { defineConfig } from "vite";
 // serves the built map, whose tiles are linked into dist; the dev server serves them
 // straight from the render output.
 const API = { "/api": "http://localhost:8790" };
-// MAP_AREA picks another rendered area, such as `valley`, while it is being built.
-const TILES = join(import.meta.dirname, "../out", process.env.MAP_AREA ?? "imphal", "tiles");
+// MAP_AREA picks another rendered area, such as `loktak`, instead of the site's `valley`.
+const TILES = join(import.meta.dirname, "../out", process.env.MAP_AREA ?? "valley", "tiles");
 const TYPES = {
   ".json": "application/json",
   ".webp": "image/webp",

@@ -16,27 +16,27 @@ run = ["uv sync", "pnpm --dir web install"]
 
 [tasks.fetch]
 description = "Download an area's sources into data/raw/<area>/"
-usage = 'arg "[area]" default="imphal"'
+usage = 'arg "[area]" default="valley"'
 run = "uv run manipur fetch --area ${usage_area}"
 
 [tasks.plan]
 description = "Write a top-down check to out/<area>/"
-usage = 'arg "[area]" default="imphal"'
+usage = 'arg "[area]" default="valley"'
 run = "uv run manipur plan --area ${usage_area}"
 
 [tasks.prepare]
 description = "Write data/derived/<area>.gpkg and its stats"
-usage = 'arg "[area]" default="imphal"'
+usage = 'arg "[area]" default="valley"'
 run = "uv run manipur prepare --area ${usage_area}"
 
 [tasks.render]
 description = "Write frame and full renders to out/<area>/"
-usage = 'arg "[area]" default="imphal"'
+usage = 'arg "[area]" default="valley"'
 run = "uv run manipur render --area ${usage_area}"
 
 [tasks.swatches]
 description = "Write the candidate palette sheet to out/<area>/"
-usage = 'arg "[area]" default="imphal"'
+usage = 'arg "[area]" default="valley"'
 run = "uv run manipur swatches --area ${usage_area}"
 
 [tasks.detail]
@@ -50,12 +50,17 @@ run = "uv run python tools/draw_sprites.py"
 
 [tasks.frames]
 description = "Render all 24 views as seamless 2048 px frames"
-usage = 'arg "[area]" default="imphal"'
+usage = 'arg "[area]" default="valley"'
 run = "uv run manipur frames --area ${usage_area}"
+
+[tasks.build]
+description = "Render and tile one view at a time, deleting frames as it goes; resumes if stopped"
+usage = 'arg "[area]" default="valley"'
+run = "caffeinate -i uv run manipur build --area ${usage_area}"
 
 [tasks.tile]
 description = "Build each view's Deep Zoom pyramid and the search index"
-usage = 'arg "[area]" default="imphal"'
+usage = 'arg "[area]" default="valley"'
 run = "uv run manipur tile --area ${usage_area}"
 
 [tasks.build]
@@ -86,8 +91,9 @@ description = "Run the Worker and the built viewer together; open http://localho
 depends = ["api", "preview"]
 
 [tasks.upload]
-description = "Upload new tile pyramids to R2"
-run = "uv run python tools/upload_tiles.py"
+description = "Upload an area's new tile pyramids, then its index files, to R2"
+usage = 'arg "[area]" default="valley"'
+run = "uv run python tools/upload_tiles.py ${usage_area}"
 
 [tasks.log-aircraft]
 description = "Log aircraft near Imphal airport to data/raw/aircraft/ until stopped"

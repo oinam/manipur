@@ -10,6 +10,7 @@ export interface Aircraft {
   altitude: number; // meters above the field
   track: number; // degrees clockwise from north
   name?: string; // shown in the label instead of the callsign
+  also?: string[]; // other ids it answers to, such as both flights of a turnaround
 }
 
 export interface Snapshot {
@@ -104,7 +105,7 @@ function between(first: Snapshot, second: Snapshot, time: number): Aircraft[] {
     }
     return [
       {
-        callsign: plane.callsign,
+        ...(amount < 0.5 ? plane : later),
         lon: plane.lon + (later.lon - plane.lon) * amount,
         lat: plane.lat + (later.lat - plane.lat) * amount,
         altitude: plane.altitude + (later.altitude - plane.altitude) * amount,
@@ -153,7 +154,7 @@ export function startAircraft(
         return [];
       }
       return between(pair[0], pair[1], Date.now() - feed.delay)
-        .filter((plane) => !shown.has(plane.callsign))
+        .filter((plane) => ![plane.callsign, ...(plane.also ?? [])].some((id) => shown.has(id)))
         .map((plane): [Aircraft, string] => {
           shown.add(plane.callsign);
           return [plane, feed.label];
@@ -272,7 +273,9 @@ export function startAircraft(
   requestAnimationFrame(draw);
   return {
     locate(callsign) {
-      const plane = planesNow().find(([each]) => each.callsign === callsign)?.[0];
+      const plane = planesNow().find(
+        ([each]) => each.callsign === callsign || each.also?.includes(callsign),
+      )?.[0];
       return plane ? toImage(currentView(), plane.lon, plane.lat, plane.altitude) : null;
     },
   };

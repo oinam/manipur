@@ -339,3 +339,9 @@ land and departures take off at their listed times, both on runway 22 toward the
 southwest. Which runway is in use isn't known, and the listed times are gate times, so
 both are simplifications; the label says the plane is not live. Details are in
 `docs/AIRCRAFT.md`.
+
+Brajeshwar asked the same day that a landed plane stay parked until it leaves, since
+Imphal has no hangar for airliners, rather than appearing from nothing. Each departure is
+now paired with the same airline's earliest earlier arrival at least 20 minutes before
+it, and the plane taxis, parks, and taxis out between the two. Pairing by airline is a
+guess at which aircraft turns around; the timetable does not say.

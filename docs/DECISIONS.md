@@ -345,3 +345,26 @@ Imphal has no hangar for airliners, rather than appearing from nothing. Each dep
 now paired with the same airline's earliest earlier arrival at least 20 minutes before
 it, and the plane taxis, parks, and taxis out between the two. Pairing by airline is a
 guess at which aircraft turns around; the timetable does not say.
+
+## 2026-11-11 — One canvas from Imphal to Loktak
+
+Brajeshwar chose to join Loktak to the Imphal map rather than give it a map of its own.
+The site's area is now `valley` (24.42–24.86 N, 93.74–94.00 E, about 1,300 km²), which
+takes in Imphal, Loktak, Keibul Lamjao, Moirang, Bishnupur, Thoubal, and Kakching. The
+`imphal` area stays for comparison.
+
+At about 1.0 GB of tiles and half an hour per view, the 24 views need about 24 GB and
+11 hours, more than the free disk could hold alongside every view's frames. So `manipur
+build` renders and tiles one view at a time, deletes that view's frames, and records each
+finished view so a stopped run resumes. The default view's frames stay for the option
+sheets.
+
+Links keep their pixel positions in the original Imphal canvas: `assets/hash_origin.json`
+holds that canvas's offsets for each view, each view in the manifest carries the shift to
+its own canvas, and the viewer applies it when reading and writing the address. Links
+shared before the map grew still land in the same place.
+
+Phumdis are drawn in style C, mats with pools and athaphum rings, inside lakes over
+1 km² and OSM's phumdi and national park areas, with open water where WorldCover says
+water. Herds of Sangai, drawn at three times real size with a dark edge, wander near the
+Sangai viewpoint in Keibul Lamjao.

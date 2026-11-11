@@ -430,3 +430,96 @@ button:focus-visible,
   height: 100%;
   pointer-events: none;
 }
+
+.help {
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.help::backdrop {
+  background: rgba(10, 14, 16, 0.5);
+}
+
+.help-body {
+  padding: 4px 16px 12px;
+}
+
+.help header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.help h2 {
+  margin: 8px 0;
+  font-size: 16px;
+}
+
+.help h3 {
+  margin: 14px 0 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.help p,
+.help ul {
+  margin: 8px 0;
+}
+
+.help ul {
+  padding-left: 18px;
+}
+
+.help a {
+  color: var(--ink);
+}
+
+.help .close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.keys {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  align-items: baseline;
+  margin: 0;
+}
+
+.keys dt {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.keys dd {
+  margin: 0;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  color: var(--ink);
+  font:
+    12px/1.6 ui-monospace,
+    monospace;
+  text-align: center;
+}

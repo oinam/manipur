@@ -56,14 +56,14 @@
         ⚙&#xFE0E;
       </button>
       <button
-        id="info-toggle"
+        id="help"
         type="button"
-        aria-label="Places and airplanes"
-        title="Places and airplanes"
-        aria-expanded="true"
-        aria-controls="info"
+        aria-label="Help and keyboard shortcuts"
+        title="Help and keyboard shortcuts (?)"
+        aria-haspopup="dialog"
+        aria-controls="help-dialog"
       >
-        ✈&#xFE0E;
+        ?
       </button>
     </div>
 
@@ -92,6 +92,59 @@
         </div>
       </div>
     </section>
+
+    <dialog id="help-dialog" class="help" aria-labelledby="help-title">
+      <div class="help-body">
+        <header>
+          <h2 id="help-title">Help</h2>
+          <form method="dialog">
+            <button class="close" type="submit" aria-label="Close">×</button>
+          </form>
+        </header>
+        <p>
+          An isometric pixel-art map of Imphal, drawn by code from open data. Drag to move, scroll
+          or pinch to zoom, and share the address bar to share the exact view.
+        </p>
+        <h3>Keyboard</h3>
+        <dl class="keys">
+          <dt>
+            <kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd> or <kbd>W</kbd> <kbd>A</kbd>
+            <kbd>S</kbd> <kbd>D</kbd>
+          </dt>
+          <dd>Move the map</dd>
+          <dt><kbd>+</kbd> <kbd>−</kbd></dt>
+          <dd>Zoom in and out</dd>
+          <dt><kbd>R</kbd>, <kbd>Shift</kbd> <kbd>R</kbd></dt>
+          <dd>Turn the view 15°, or back</dd>
+          <dt><kbd>N</kbd></dt>
+          <dd>Face north</dd>
+          <dt><kbd>H</kbd> or <kbd>0</kbd></dt>
+          <dd>Back to the city center</dd>
+          <dt><kbd>/</kbd></dt>
+          <dd>Search a place</dd>
+          <dt><kbd>I</kbd></dt>
+          <dd>Collapse or expand the info panel</dd>
+          <dt><kbd>?</kbd></dt>
+          <dd>Open or close this help</dd>
+          <dt><kbd>Esc</kbd></dt>
+          <dd>Close a panel or this help</dd>
+        </dl>
+        <h3>Good to know</h3>
+        <ul>
+          <li>
+            Airplanes are live from The OpenSky Network, shown two minutes late. Its receivers lose
+            most flights over the hills, so a plane rarely reaches the map.
+          </li>
+          <li>Flight times in the info panel are scheduled times at Imphal, in IST.</li>
+          <li>
+            Buildings, roofs, and trees are drawn from open data, so details may be wrong. Use
+            Suggest a correction at the bottom right to report one.
+          </li>
+          <li>Water and other animation can be turned off in Settings (⚙).</li>
+        </ul>
+        <p><a href="/about.html">How this map was made, and full credits</a></p>
+      </div>
+    </dialog>
 
     <div id="settings-panel" class="panel settings" hidden>
       <label><input id="animation" type="checkbox" /> Animation</label>

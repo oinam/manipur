@@ -61,6 +61,19 @@ const RUNWAY_MIDDLE = { lon: 93.8972, lat: 24.7596 };
 const AIRPORT_ZOOM = 0.35;
 const PLANE_ZOOM = 0.6;
 const SHORTCUT_ZOOM = 0.9;
+const ZOOM_STEP = 1.6;
+// A key press moves the map this fraction of the screen.
+const PAN_STEP = 0.15;
+const PAN_KEYS: Record<string, [number, number]> = {
+  ArrowUp: [0, -1],
+  KeyW: [0, -1],
+  ArrowDown: [0, 1],
+  KeyS: [0, 1],
+  ArrowLeft: [-1, 0],
+  KeyA: [-1, 0],
+  ArrowRight: [1, 0],
+  KeyD: [1, 0],
+};
 // The info panel's places to go to: a short name, the name in the search index, and the
 // zoom that fits the place on screen.
 const SHORTCUTS: [string, string, number][] = [
@@ -365,13 +378,30 @@ function bindZoom(id: string, action: () => void): void {
   byId(id, HTMLButtonElement).addEventListener("click", action);
 }
 
-bindZoom("zoom-in", () => viewer.viewport.zoomBy(1.6).applyConstraints());
-bindZoom("zoom-out", () => viewer.viewport.zoomBy(1 / 1.6).applyConstraints());
+function zoomBy(factor: number): void {
+  viewer.viewport.zoomBy(factor).applyConstraints();
+}
+
 // Home is the opening view, near enough to read the city, in whichever way it faces now.
-bindZoom("home", () => {
+function goHome(): void {
   const [x, y] = toCurrentView(OPENING_VIEW.x, OPENING_VIEW.y);
   goTo(x, y, OPENING_VIEW.zoom, false);
+}
+
+function panBy(dx: number, dy: number): void {
+  const bounds = viewer.viewport.getBounds();
+  viewer.viewport
+    .panBy(new OpenSeadragon.Point(dx * bounds.width * PAN_STEP, dy * bounds.height * PAN_STEP))
+    .applyConstraints();
+}
+
+bindZoom("zoom-in", () => {
+  zoomBy(ZOOM_STEP);
 });
+bindZoom("zoom-out", () => {
+  zoomBy(1 / ZOOM_STEP);
+});
+bindZoom("home", goHome);
 bindZoom("compass", () => {
   turnTo(NORTH_UP_VIEW);
 });
@@ -500,3 +530,90 @@ input.addEventListener("input", () => {
     places.filter((place) => place.name.toLowerCase().includes(query)).slice(0, MAX_RESULTS),
   );
 });
+
+const helpDialog = byId("help-dialog", HTMLDialogElement);
+
+function toggleHelp(): void {
+  if (helpDialog.open) {
+    helpDialog.close();
+  } else {
+    showSettings(false);
+    helpDialog.showModal();
+  }
+}
+
+byId("help", HTMLButtonElement).addEventListener("click", toggleHelp);
+// A click on the backdrop lands on the dialog itself, not on its body.
+helpDialog.addEventListener("click", (event) => {
+  if (event.target === helpDialog) {
+    helpDialog.close();
+  }
+});
+
+// The map's own keys would tilt or mirror the pre-drawn view, so every key is handled here.
+viewer.addHandler("canvas-key", (event) => {
+  event.preventDefaultAction = true;
+});
+
+function keyAction(event: KeyboardEvent): (() => void) | null {
+  const pan = PAN_KEYS[event.key] ?? PAN_KEYS[event.code];
+  const target = event.target;
+  // Arrow keys stay with the tabs, search results, and other controls that use them.
+  const onMap =
+    target === document.body || (target instanceof Node && viewer.element.contains(target));
+  if (pan && (onMap || event.code.startsWith("Key"))) {
+    return () => {
+      panBy(...pan);
+    };
+  }
+  const byKey: Record<string, () => void> = {
+    "?": toggleHelp,
+    "/": () => {
+      input.focus();
+    },
+    "+": () => {
+      zoomBy(ZOOM_STEP);
+    },
+    "=": () => {
+      zoomBy(ZOOM_STEP);
+    },
+    "-": () => {
+      zoomBy(1 / ZOOM_STEP);
+    },
+    "0": goHome,
+  };
+  const byCode: Record<string, () => void> = {
+    KeyR: () => {
+      rotateView(event.shiftKey || event.altKey ? -1 : 1);
+    },
+    KeyN: () => {
+      turnTo(NORTH_UP_VIEW);
+    },
+    KeyH: goHome,
+    KeyI: () => {
+      byId("info-collapse", HTMLButtonElement).click();
+    },
+  };
+  return byKey[event.key] ?? byCode[event.code] ?? null;
+}
+
+// Captured, so the map's own key handling never sees a key handled here.
+document.addEventListener(
+  "keydown",
+  (event) => {
+    const target = event.target;
+    const typing =
+      (target instanceof HTMLInputElement && target.type !== "checkbox") ||
+      target instanceof HTMLTextAreaElement;
+    if (typing || event.ctrlKey || event.metaKey || (helpDialog.open && event.key !== "?")) {
+      return;
+    }
+    const action = keyAction(event);
+    if (action) {
+      event.preventDefault();
+      event.stopPropagation();
+      action();
+    }
+  },
+  true,
+);

@@ -1,5 +1,4 @@
-// The info panel at the bottom left, shown and hidden by the plane button among the controls.
-// It has tabs, and collapses to just them. One tab holds places to go to; the other holds
+// The info panel at the bottom left. It has tabs, and collapses to just them. One tab holds places to go to; the other holds
 // today's timetable at Imphal, marking the flights OpenSky heard nearby, or without a
 // timetable what OpenSky saw instead.
 
@@ -230,19 +229,11 @@ function renderSightings(container: HTMLElement, flights: Flight[]): void {
 }
 
 export function startInfo(focus: (callsign?: string) => void): void {
-  const toggle = element("info-toggle", HTMLButtonElement);
   const panel = element("info", HTMLElement);
   const flights = element("flights", HTMLDivElement);
   const note = element("flights-note", HTMLParagraphElement);
   const title = element("info-title", HTMLHeadingElement);
 
-  const setHidden = (hidden: boolean) => {
-    panel.hidden = hidden;
-    toggle.setAttribute("aria-expanded", String(!hidden));
-  };
-  toggle.addEventListener("click", () => {
-    setHidden(!panel.hidden);
-  });
   startTabs(panel);
 
   const load = async () => {

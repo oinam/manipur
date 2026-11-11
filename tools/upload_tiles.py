@@ -1,7 +1,10 @@
 """Upload each tile pyramid that R2 does not have yet; pyramids never change once named.
 
 Batches are recorded as they finish, so a stopped run picks up where it left off. The
-index files go last, so the manifest never names a pyramid R2 does not have yet.
+index files go last, so the manifest never names a pyramid R2 does not have yet. Only the
+pyramids of views the build has recorded as finished go up, so it is safe to run while
+`manipur build` is still working. With --pyramids-only it stops before the index files,
+which switch the live site over; send those once the code that reads them is deployed.
 """
 
 import json
@@ -15,12 +18,15 @@ from pathlib import Path
 
 BUCKET = "manipur-tiles"
 ACCOUNT_ID = "091e65b116deac24fcc274459b6fbde0"
-AREA = sys.argv[1] if len(sys.argv) > 1 else "valley"
+ARGS = [arg for arg in sys.argv[1:] if not arg.startswith("--")]
+AREA = ARGS[0] if ARGS else "valley"
+PYRAMIDS_ONLY = "--pyramids-only" in sys.argv
 TILES = Path("out", AREA, "tiles").resolve()
 DONE = Path("out", AREA, "uploaded-pyramids.json")
 CACHE_CONTROL = "public, max-age=31536000, immutable"
 INDEX_CACHE_CONTROL = "no-cache"
 CONTENT_TYPES = {".webp": "image/webp", ".dzi": "application/xml"}
+VIEWS_RECORD = TILES / "views.json"
 INDEXES = ("manifest.json", "search.json", "flow.json", "credits.json")
 BATCH_FILES = 200
 ATTEMPTS = 8
@@ -59,8 +65,9 @@ def put(entries: list[dict], content_type: str, cache_control: str) -> None:
 
 def main() -> None:
     done = set(json.loads(DONE.read_text())) if DONE.exists() else set()
+    finished = {view["pyramid"] for view in json.loads(VIEWS_RECORD.read_text()).values()}
     for pyramid in sorted((TILES / "pyramid").iterdir()):
-        if pyramid.name in done:
+        if pyramid.name in done or pyramid.name not in finished:
             continue
         for suffix, content_type in CONTENT_TYPES.items():
             entries = [
@@ -76,6 +83,16 @@ def main() -> None:
         done.add(pyramid.name)
         DONE.write_text(json.dumps(sorted(done)))
         print(f"{pyramid.name}: uploaded", flush=True)
+    if PYRAMIDS_ONLY:
+        print(f"{len(finished & done)} of {len(finished)} finished pyramids uploaded")
+        return
+    # The build rewrites the manifest only once every view is finished; until then it may
+    # name fewer views than are done, or pyramids R2 does not have.
+    named = {
+        view["pyramid"] for view in json.loads((TILES / INDEXES[0]).read_text())["views"].values()
+    }
+    if named != finished or not named <= done:
+        sys.exit("The manifest is not ready to publish: wait for the build, then upload again.")
     indexes = [{"key": name, "file": str(TILES / name)} for name in INDEXES]
     put_with_retries(indexes, "application/json", INDEX_CACHE_CONTROL)
     print("indexes: uploaded", flush=True)

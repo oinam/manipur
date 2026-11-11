@@ -84,6 +84,13 @@ Brajeshwar decided these on 2026-11-10.
    timetable it lists OpenSky's sightings as landed, took off, or passed. In IST,
    refreshed every minute.
 5. **Credits:** OpenSky in the credits panel, `/about.html`, and the API response.
+6. **Timetable planes** (`web/src/timetable.ts`, paths in `web/src/runway.ts`): coverage
+   proved poor, so Brajeshwar chose on 2026-11-11 to draw each scheduled flight as a
+   plane labeled "scheduled, not live". An arrival lands on runway 22 at its scheduled
+   or revised time, after about six minutes of approach from 25 km out; a departure
+   starts its takeoff roll at its time and climbs out to 25 km. Canceled and diverted
+   flights are skipped. A live plane with the same callsign replaces its stand-in. They
+   need only the Worker's timetable, not the relay, so they show while the Mac is off.
 
 - **Style C, bold.** The plane is the A320-sized model with body, fin, and engines,
   drawn at twice real size so it reads when zoomed out (`out/imphal/aircraft-options.png`,
@@ -91,9 +98,8 @@ Brajeshwar decided these on 2026-11-10.
 
 ## Decisions for Brajeshwar
 
-- **What to do if coverage is poor:** a local receiver near the airport (needs a
-  check of India's rules on radio receivers), planes from the timetable labeled as
-  not live, or stopping.
+- **A local receiver near the airport,** for real approaches on the map. Needs a check
+  of India's rules on radio receivers. Open.
 
 ## Sources read
 

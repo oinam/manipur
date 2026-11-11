@@ -6,6 +6,7 @@ const API = "/api/aircraft";
 
 export const liveFeed: Feed = {
   label: "2 min ago",
+  delay: 120_000,
   async load() {
     const response = await fetch(API);
     if (!response.ok) {

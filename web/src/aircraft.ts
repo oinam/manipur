@@ -9,6 +9,7 @@ export interface Aircraft {
   lat: number;
   altitude: number; // meters above the field
   track: number; // degrees clockwise from north
+  name?: string; // shown in the label instead of the callsign
 }
 
 export interface Snapshot {
@@ -16,10 +17,11 @@ export interface Snapshot {
   aircraft: Aircraft[];
 }
 
-// Two snapshots around the moment being shown; planes move between them.
+// Two snapshots around the moment being shown, this long ago; planes move between them.
 export interface Feed {
   load(time: number): Promise<[Snapshot, Snapshot] | null>;
   label: string;
+  delay: number; // milliseconds
 }
 
 type Point = [number, number];
@@ -29,7 +31,6 @@ export interface AircraftLayer {
   locate(callsign: string): Point | null;
 }
 
-const DELAY_MS = 120_000;
 const RELOAD_MS = 5_000;
 const LIFT = Math.sqrt(3); // screen pixels per meter of height, as the buildings use
 const SCALE = 2; // style C: twice real size
@@ -116,7 +117,7 @@ function between(first: Snapshot, second: Snapshot, time: number): Aircraft[] {
 export function startAircraft(
   viewer: OpenSeadragon.Viewer,
   currentView: () => View,
-  feed: Feed,
+  feeds: Feed[],
 ): AircraftLayer | null {
   const source = (viewer.drawer as unknown as { canvas: HTMLCanvasElement }).canvas;
   const canvas = document.createElement("canvas");
@@ -127,17 +128,37 @@ export function startAircraft(
     return null;
   }
   const draw2d = context;
-  let pair: [Snapshot, Snapshot] | null = null;
+  const pairs = new Map<Feed, [Snapshot, Snapshot] | null>();
 
   function reload(): void {
-    feed
-      .load(Date.now() - DELAY_MS)
-      .then((loaded) => {
-        pair = loaded;
-      })
-      .catch((error: unknown) => {
-        console.error("Aircraft failed to load", error);
-      });
+    for (const feed of feeds) {
+      feed
+        .load(Date.now() - feed.delay)
+        .then((loaded) => {
+          pairs.set(feed, loaded);
+        })
+        .catch((error: unknown) => {
+          console.error("Aircraft failed to load", error);
+        });
+    }
+  }
+
+  // Every plane now, with its feed's label; an earlier feed's plane hides a later one's
+  // with the same callsign, so a live plane replaces its timetable stand-in.
+  function planesNow(): [Aircraft, string][] {
+    const shown = new Set<string>();
+    return feeds.flatMap((feed) => {
+      const pair = pairs.get(feed);
+      if (!pair) {
+        return [];
+      }
+      return between(pair[0], pair[1], Date.now() - feed.delay)
+        .filter((plane) => !shown.has(plane.callsign))
+        .map((plane): [Aircraft, string] => {
+          shown.add(plane.callsign);
+          return [plane, feed.label];
+        });
+    });
   }
 
   // Ground meters to the current view's image pixels, lifted by height.
@@ -147,7 +168,12 @@ export function startAircraft(
     return [a * x + b * y + view.x_offset, d * x + e * y + view.y_offset - height * LIFT];
   }
 
-  function drawPlane(plane: Aircraft, toScreen: (point: Point) => Point, density: number): void {
+  function drawPlane(
+    plane: Aircraft,
+    label: string,
+    toScreen: (point: Point) => Point,
+    density: number,
+  ): void {
     const [x, y] = toUtm(plane.lon, plane.lat);
     const heading = (plane.track * Math.PI) / 180;
     const sin = Math.sin(heading);
@@ -212,7 +238,7 @@ export function startAircraft(
 
     // The label sits above the fin, outlined so it reads over roofs and fields.
     const [labelX, labelY] = place(0, 0, 18);
-    const text = `${plane.callsign} · ${feed.label}`;
+    const text = `${plane.name ?? plane.callsign} · ${label}`;
     draw2d.lineWidth = 3 * density;
     draw2d.lineJoin = "round";
     draw2d.strokeText(text, labelX, labelY);
@@ -227,9 +253,6 @@ export function startAircraft(
       canvas.height = source.height;
     }
     draw2d.clearRect(0, 0, canvas.width, canvas.height);
-    if (!pair) {
-      return;
-    }
     const density = source.width / source.clientWidth;
     const zoom = viewer.viewport.viewportToImageZoom(viewer.viewport.getZoom(true)) * density;
     const origin = viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(0, 0));
@@ -239,8 +262,8 @@ export function startAircraft(
     ];
     draw2d.font = `600 ${String(Math.round(12 * density))}px system-ui, sans-serif`;
     draw2d.textAlign = "center";
-    for (const plane of between(pair[0], pair[1], Date.now() - DELAY_MS)) {
-      drawPlane(plane, toScreen, density);
+    for (const [plane, label] of planesNow()) {
+      drawPlane(plane, label, toScreen, density);
     }
   }
 
@@ -249,11 +272,7 @@ export function startAircraft(
   requestAnimationFrame(draw);
   return {
     locate(callsign) {
-      const plane = pair
-        ? between(pair[0], pair[1], Date.now() - DELAY_MS).find(
-            (each) => each.callsign === callsign,
-          )
-        : undefined;
+      const plane = planesNow().find(([each]) => each.callsign === callsign)?.[0];
       return plane ? toImage(currentView(), plane.lon, plane.lat, plane.altitude) : null;
     },
   };

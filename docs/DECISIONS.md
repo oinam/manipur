@@ -330,3 +330,12 @@ the cached Geofabrik extract. Outside the state is faded toward paper. Land cove
 elevation are read at about 60 m into `data/raw/manipur/`, not at full resolution, so
 the fetch stays small. This is a check render, not the coarse layer for Phase 4; how
 that layer looks is Brajeshwar's call.
+
+## 2026-11-11 — Planes from the timetable
+
+OpenSky never heard a flight closer than 125 km from Imphal, so Brajeshwar chose to draw
+planes from the timetable, labeled "scheduled, not live", next to any live ones. Arrivals
+land and departures take off at their listed times, both on runway 22 toward the
+southwest. Which runway is in use isn't known, and the listed times are gate times, so
+both are simplifications; the label says the plane is not live. Details are in
+`docs/AIRCRAFT.md`.

@@ -1,6 +1,8 @@
-// The info panel at the bottom left. It has tabs, and collapses to just them. One tab holds places to go to; the other holds
-// today's timetable at Imphal, marking the flights OpenSky heard nearby, or without a
-// timetable what OpenSky saw instead.
+// The info panel at the bottom left. It has tabs, and collapses to just them. One tab
+// holds places to go to; the other holds today's timetable at Imphal, marking the flights
+// OpenSky heard nearby, or without a timetable what OpenSky saw instead.
+
+import { flightId } from "./timetable";
 
 interface Flight {
   callsign: string;
@@ -50,8 +52,9 @@ const SIGHTINGS_NOTE =
   "valley floor, so most flights show only as passing.";
 const SCHEDULE_NOTE =
   `Scheduled times in IST from AeroDataBox, landing and leaving at Imphal; airlines may change ` +
-  `them. ${SEEN_MARK} marks a flight OpenSky heard within 150 km. Its receivers lose most ` +
-  "flights over the hills, so a plane rarely reaches the map.";
+  "them. Each flight is drawn on the map landing or taking off at its time, labeled " +
+  `"scheduled, not live". ${SEEN_MARK} marks a flight OpenSky heard within 150 km; its ` +
+  "receivers lose most flights over the hills, so a live plane rarely reaches the map.";
 
 function element<T extends HTMLElement>(id: string, type: new () => T): T {
   const found = document.getElementById(id);
@@ -179,7 +182,7 @@ function renderSchedule(
   container: HTMLElement,
   schedule: Schedule,
   seen: Set<string>,
-  focus: (callsign?: string) => void,
+  focus: (id: string) => void,
 ): void {
   const now = Date.now();
   const rows = (flights: Scheduled[], preposition: string) =>
@@ -199,7 +202,7 @@ function renderSchedule(
         item.setAttribute("role", "button");
         item.title = "Show on the map";
         const show = () => {
-          focus(flight.callsign);
+          focus(flightId(flight));
         };
         item.addEventListener("click", show);
         item.addEventListener("keydown", (event) => {
@@ -228,7 +231,7 @@ function renderSightings(container: HTMLElement, flights: Flight[]): void {
   );
 }
 
-export function startInfo(focus: (callsign?: string) => void): void {
+export function startInfo(focus: (id: string) => void): void {
   const panel = element("info", HTMLElement);
   const flights = element("flights", HTMLDivElement);
   const note = element("flights-note", HTMLParagraphElement);

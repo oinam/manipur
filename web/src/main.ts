@@ -3,6 +3,7 @@ import { startAircraft, toImage, type AircraftLayer } from "./aircraft";
 import { startInfo } from "./info";
 import { liveFeed } from "./live";
 import { simulatedArrival } from "./simulation";
+import { timetableFeed } from "./timetable";
 import { TILE_BASE } from "./tiles";
 import { startWater } from "./water";
 import {
@@ -188,10 +189,10 @@ let water: ReturnType<typeof startWater> | null = null;
 let marker: HTMLElement | null = null;
 let aircraft: AircraftLayer | null = null;
 
-// Brings a flight from the airplanes panel into view: the plane if the live feed has it,
+// Brings a flight from the airplanes panel into view: its plane, live or from the timetable,
 // otherwise the runway it is about to use.
-function focusFlight(callsign?: string): void {
-  const plane = callsign ? aircraft?.locate(callsign) : null;
+function focusFlight(id: string): void {
+  const plane = aircraft?.locate(id);
   const [x, y] = plane ?? toImage(viewData(currentView), RUNWAY_MIDDLE.lon, RUNWAY_MIDDLE.lat);
   goTo(x, y, plane ? PLANE_ZOOM : AIRPORT_ZOOM, false);
 }
@@ -288,8 +289,8 @@ viewer.addHandler("open", () => {
   } else {
     water = startWater(viewer, byId("animation", HTMLInputElement), toCurrentView);
     if (AIRCRAFT_MODE !== "off") {
-      const feed = AIRCRAFT_DEMO ? simulatedArrival : liveFeed;
-      aircraft = startAircraft(viewer, () => viewData(currentView), feed);
+      const feeds = AIRCRAFT_DEMO ? [simulatedArrival] : [liveFeed, timetableFeed];
+      aircraft = startAircraft(viewer, () => viewData(currentView), feeds);
     }
     startInfo(focusFlight);
     viewer.addHandler("animation-finish", writeHash);

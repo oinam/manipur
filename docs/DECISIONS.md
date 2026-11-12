@@ -429,5 +429,6 @@ files, which still go last.
 
 It needs an R2 API token limited to Object Read & Write on `manipur-tiles`, kept in
 `.env` as `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`; rclone is pinned in mise and
-configured from those, with no config file. The nightly schedule stays until one fast
-run has gone through, then goes.
+configured from those, with no config file. The first run sent the rest of the valley,
+570,704 files in all, in under four hours, so the nightly schedule, its launchd agent,
+and the `upload-night` and `schedule-*` tasks are gone.

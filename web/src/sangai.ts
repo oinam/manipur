@@ -86,6 +86,8 @@ const HERDS: LonLat[] = [
   [93.8258, 24.4745],
   [93.8265, 24.4665],
 ];
+// The Keibul Lamjao shortcut centers on the herd nearest the viewpoint.
+export const SANGAI_HERD: LonLat = HERDS[0] ?? [93.8205, 24.4735];
 const HERD_SIZE = 6;
 const HERD_RADIUS_M = 140;
 const WANDER_M = 45;

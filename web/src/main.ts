@@ -3,7 +3,7 @@ import { startAircraft, toImage, type AircraftLayer } from "./aircraft";
 import { startInfo } from "./info";
 import { liveFeed } from "./live";
 import { startRivers } from "./rivers";
-import { startSangai } from "./sangai";
+import { SANGAI_HERD, startSangai } from "./sangai";
 import { simulatedArrival } from "./simulation";
 import { timetableFeed } from "./timetable";
 import { TILE_BASE } from "./tiles";
@@ -81,8 +81,9 @@ const PAN_KEYS: Record<string, [number, number]> = {
   KeyD: [1, 0],
 };
 // The info panel's places to go to: a short name, the name in the search index, and the
-// zoom that fits the place on screen.
-const SHORTCUTS: [string, string, number][] = [
+// zoom that fits the place on screen; a fourth entry, longitude and latitude, centers on
+// that spot instead of the place.
+const SHORTCUTS: [string, string, number, [number, number]?][] = [
   ["Airport", "Bir Tikendrajit International Airport", AIRPORT_ZOOM],
   ["Kangla", "Kangla Sha", 0.5],
   ["Ima Keithel", "Ima Keithel", SHORTCUT_ZOOM],
@@ -94,7 +95,7 @@ const SHORTCUTS: [string, string, number][] = [
   ["Manipur University", "Manipur University", 0.6],
   ["War Cemetery", "Imphal War Cemetery", SHORTCUT_ZOOM],
   ["Loktak", "Thanga", 0.15],
-  ["Keibul Lamjao", "Sangai viewpoint", 0.6],
+  ["Keibul Lamjao", "Sangai viewpoint", 1.5, SANGAI_HERD],
   ["Oinam", "Oinam", 0.3],
 ];
 
@@ -529,13 +530,18 @@ fetch(SEARCH_INDEX, { cache: "no-cache" })
 function buildShortcuts(): void {
   const known = new Set(basePlaces.map((place) => place.name));
   byId("shortcuts", HTMLDivElement).replaceChildren(
-    ...SHORTCUTS.filter(([, name]) => known.has(name)).map(([label, name, zoom]) => {
+    ...SHORTCUTS.filter(([, name]) => known.has(name)).map(([label, name, zoom, spot]) => {
       const button = document.createElement("button");
       button.type = "button";
       button.textContent = label;
       button.title = name;
       button.addEventListener("click", () => {
         // Looked up on click, so it lands right in whichever view is open.
+        if (spot) {
+          const [x, y] = toImage(viewData(currentView), ...spot);
+          goTo(x, y, zoom, false);
+          return;
+        }
         const place = places.find((candidate) => candidate.name === name);
         if (place) {
           goTo(place.x, place.y, zoom, false);

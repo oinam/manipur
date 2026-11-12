@@ -242,7 +242,8 @@ export function startInfo(focus: (id: string) => void): void {
   const load = async () => {
     title.textContent = `Today, ${DATE.format(Date.now())}`;
     try {
-      const response = await fetch(API);
+      // Browsers may still hold a copy from Nov 11 under a one-year header; always ask again.
+      const response = await fetch(API, { cache: "no-cache" });
       if (!response.ok) {
         throw new Error(`Aircraft API ${String(response.status)}`);
       }

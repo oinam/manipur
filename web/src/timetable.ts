@@ -131,7 +131,8 @@ function plan(board: Schedule, now: number): Visit[] {
 async function current(): Promise<Visit[]> {
   if (Date.now() - loadedAt > RELOAD_MS) {
     loadedAt = Date.now();
-    const response = await fetch(API);
+    // Browsers may still hold a copy from Nov 11 under a one-year header; always ask again.
+    const response = await fetch(API, { cache: "no-cache" });
     if (response.ok) {
       const { schedule } = (await response.json()) as { schedule?: Schedule };
       visits = schedule ? plan(schedule, Date.now()) : [];

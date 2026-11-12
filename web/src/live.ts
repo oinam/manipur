@@ -8,7 +8,8 @@ export const liveFeed: Feed = {
   label: "2 min ago",
   delay: 120_000,
   async load() {
-    const response = await fetch(API);
+    // Browsers may still hold a copy from Nov 11 under a one-year header; always ask again.
+    const response = await fetch(API, { cache: "no-cache" });
     if (!response.ok) {
       throw new Error(`Aircraft API ${String(response.status)}`);
     }

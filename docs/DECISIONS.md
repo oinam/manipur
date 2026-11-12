@@ -405,3 +405,13 @@ yet. When every view is up, the job posts a macOS notification; then push the co
 for the deploy, and run `mise run upload` to send the index files, which switches the site
 over in seconds. That last step stays by hand, because it publishes. `mise run
 schedule-off` removes the agent.
+
+The first night uploaded nothing. The agent ran as `ProcessType` Background, which puts
+its disk reads behind everyone else's on the same drive; the valley build was writing
+tiles there until 01:14, and the uploader sat in its first read of `out/` from 22:00 until
+a foreground `ls` of the drive at 06:08 freed it, with 3 seconds of CPU in eight hours.
+Why it stayed stuck after the build finished is not known. That read came before the
+uploader worked out its 5:00 deadline, so it took the next 5:00, a day later, and kept
+going through the morning. The agent now runs as Standard, since it is paced by the
+network and gains nothing from a lower tier, and the deadline is fixed before the first
+read.

@@ -94,9 +94,9 @@ def ready(finished: set[str], done: set[str]) -> bool:
 
 
 def main() -> None:
+    stop = deadline()  # before touching the drive, so a slow first read can't move it a day
     done = set(json.loads(DONE.read_text())) if DONE.exists() else set()
     finished = {view["pyramid"] for view in json.loads(VIEWS_RECORD.read_text()).values()}
-    stop = deadline()
     for pyramid in sorted((TILES / "pyramid").iterdir()):
         if pyramid.name in done or pyramid.name not in finished:
             continue

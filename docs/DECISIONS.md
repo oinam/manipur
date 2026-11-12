@@ -468,3 +468,7 @@ The other 20 views' pyramids are gone from R2. Their local copies, about 20 GB, 
 The viewer reads its views from the manifest instead of a fixed list, so it works with
 either manifest, which set the order: push and deploy, upload the four-view manifest,
 check the site, then delete from R2.
+
+The bucket still holds the old Imphal map's 24 pyramids, which nothing reads now (local
+copies in `out/imphal/tiles/pyramid/`), and `1b7ede2a65`, an unfinished upload with no
+`.dzi` and no local copy. They stay until Brajeshwar says otherwise.

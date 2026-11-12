@@ -2,6 +2,7 @@ import OpenSeadragon from "openseadragon";
 import { startAircraft, toImage, type AircraftLayer } from "./aircraft";
 import { startInfo } from "./info";
 import { liveFeed } from "./live";
+import { startRivers } from "./rivers";
 import { startSangai } from "./sangai";
 import { simulatedArrival } from "./simulation";
 import { timetableFeed } from "./timetable";
@@ -198,6 +199,7 @@ let currentView = DEFAULT_VIEW;
 let pendingTarget: Target | null = null;
 let still: HTMLCanvasElement | null = null;
 let water: ReturnType<typeof startWater> | null = null;
+let rivers: ReturnType<typeof startRivers> | null = null;
 let marker: HTMLElement | null = null;
 let aircraft: AircraftLayer | null = null;
 
@@ -298,8 +300,10 @@ viewer.addHandler("open", () => {
   writeHash();
   if (water) {
     water.refresh();
+    rivers?.refresh();
   } else {
     water = startWater(viewer, byId("animation", HTMLInputElement), toCurrentView);
+    rivers = startRivers(viewer, toCurrentView);
     if (AIRCRAFT_MODE !== "off") {
       const feeds = AIRCRAFT_DEMO ? [simulatedArrival] : [liveFeed, timetableFeed];
       aircraft = startAircraft(viewer, () => viewData(currentView), feeds);

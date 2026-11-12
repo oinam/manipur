@@ -432,3 +432,14 @@ It needs an R2 API token limited to Object Read & Write on `manipur-tiles`, kept
 configured from those, with no config file. The first run sent the rest of the valley,
 570,704 files in all, in under four hours, so the nightly schedule, its launchd agent,
 and the `upload-night` and `schedule-*` tasks are gone.
+
+## 2026-11-12 — River names ride along their rivers
+
+Rivers are labeled in the viewer, not baked into the tiles, so a name can follow the
+river as the map moves. `flow.json`, which already carries every waterway for the water
+animation, now also names the 19 named rivers (OSM `waterway=river`), so no new file or
+source is needed. Each river gets one label, set on the point of the river nearest the
+middle of the screen and turned along it, never upside down; panning slides it along
+the river. Longer rivers claim their spot first when two labels would meet, and none
+show when the whole valley is in view. They are italic and pale blue, a placeholder
+style for Brajeshwar to settle.

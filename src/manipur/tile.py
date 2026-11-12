@@ -87,7 +87,10 @@ def search_index(area: Area, x_offset: float, y_offset: float) -> list[dict]:
 
 
 def flow_lines(area: Area, x_offset: float, y_offset: float) -> list[dict]:
-    """Return waterways as canvas polylines; OSM draws each one in the downstream direction."""
+    """Return waterways as canvas polylines; OSM draws each one in the downstream direction.
+
+    Rivers carry their names, which the viewer labels along the stretch in view.
+    """
     a, b, d, e = PROJECTION.matrix
     ways = gpd.read_file(derived_path(area), layer="waterways")
     lines = []
@@ -100,7 +103,10 @@ def flow_lines(area: Area, x_offset: float, y_offset: float) -> list[dict]:
                 [round(a * x + b * y + x_offset), round(d * x + e * y + y_offset)]
                 for x, y in part.simplify(FLOW_SIMPLIFY_M).coords
             ]
-            lines.append({"width": round(row.width_m), "points": points})
+            line = {"width": round(row.width_m), "points": points}
+            if row.waterway == "river" and isinstance(row.name, str) and len(points) > 1:
+                line["name"] = row.name
+            lines.append(line)
     return lines
 
 

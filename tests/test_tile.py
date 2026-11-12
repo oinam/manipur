@@ -35,3 +35,19 @@ def test_flow_lines_keep_the_drawn_direction(tmp_path, monkeypatch):
     a, _, d, _ = PROJECTION.matrix
     assert line["width"] == 30
     assert line["points"] == [[10, 20], [round(a * 100 + 10), round(d * 100 + 20)]]
+    assert line["name"] == "Test"
+
+
+def test_flow_lines_name_rivers_only(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    area = Area("test", 0.0, 0.0, 1.0, 1.0)
+    path = derived_path(area)
+    path.parent.mkdir(parents=True)
+    frame = gpd.GeoDataFrame(
+        {"waterway": ["stream", "river"], "width_m": [4.0, 30.0], "name": ["Brook", None]},
+        geometry=[LineString([(0.0, 0.0), (50.0, 0.0)]), LineString([(0.0, 9.0), (50.0, 9.0)])],
+        crs=METRIC_CRS,
+    )
+    frame.to_file(path, layer="waterways", driver="GPKG")
+
+    assert [line.get("name") for line in flow_lines(area, 0.0, 0.0)] == [None, None]

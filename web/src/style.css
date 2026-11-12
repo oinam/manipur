@@ -408,6 +408,22 @@ button:focus-visible,
 }
 
 /* OpenSeadragon sets display inline on every overlay, so hiding one needs !important. */
+.rivers {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.river {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: #cfe8f2;
+  font-style: italic;
+  letter-spacing: 0.04em;
+}
+
 .label[hidden] {
   display: none !important;
 }

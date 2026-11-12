@@ -15,13 +15,16 @@ from manipur.detail import (
     DEFAULT_VIEW,
     LANDMARKS_PATH,
     PROJECTION,
+    RENDERED_VIEWS,
     SPRITE_DIR,
     VIEWS,
     _render_view,
     frames_dir,
     load_scene,
     manifest_path,
+    plan_view,
     trees_path,
+    view_projection,
 )
 from manipur.prepare import METRIC_CRS, derived_path
 
@@ -190,15 +193,36 @@ def _view_entry(area: Area, view: str, target: Path) -> dict:
     return entry
 
 
+def link_frames() -> dict:
+    """Every view's frame in the original Imphal canvas, where share links keep their pixels.
+
+    Links name any of the 24 views the site once had; the viewer turns one naming a view it
+    no longer shows into the nearest view it does.
+    """
+    origins = json.loads(HASH_ORIGIN.read_text())
+    return {
+        view: {
+            "matrix": list(view_projection(view).matrix),
+            "x_offset": origins[view][0],
+            "y_offset": origins[view][1],
+        }
+        for view in VIEWS
+        if view in origins
+    }
+
+
 def _write_indexes(area: Area, target: Path, views: dict) -> None:
-    # Search and flow are written in the default view; the viewer converts them for the others.
+    # Search and flow are written in the default view, which is planned but not rendered;
+    # the viewer converts them for the views it shows.
     manifest = json.loads(manifest_path(area).read_text())
     entries = search_index(area, manifest["x_offset"], manifest["y_offset"])
     (target / "search.json").write_text(json.dumps(entries, ensure_ascii=False))
     (target / "credits.json").write_text(json.dumps(landmark_credits(), ensure_ascii=False))
     flow = flow_lines(area, manifest["x_offset"], manifest["y_offset"])
     (target / "flow.json").write_text(json.dumps(flow))
-    (target / "manifest.json").write_text(json.dumps({**manifest, "views": views}))
+    (target / "manifest.json").write_text(
+        json.dumps({**manifest, "views": views, "links": link_frames()})
+    )
     print(f"{len(entries)} search entries")
 
 
@@ -206,20 +230,22 @@ def tile(area: Area) -> None:
     target = tiles_dir(area)
     if target.exists():
         shutil.rmtree(target)
-    views = {view: _view_entry(area, view, target) for view in VIEWS}
+    if not manifest_path(area).exists():
+        plan_view(area, load_scene(area), DEFAULT_VIEW)
+    views = {view: _view_entry(area, view, target) for view in RENDERED_VIEWS}
     _write_indexes(area, target, views)
 
 
 def build(area: Area, only: list[str] | None = None) -> None:
     """Render and tile one view at a time, then delete its frames, so the disk never holds
-    more than the finished tiles and one view's frames. The default view's frames stay for
-    the option sheets. Picks up after the last finished view if stopped."""
+    more than the finished tiles and one view's frames. Picks up after the last finished
+    view if stopped."""
     target = tiles_dir(area)
     target.mkdir(parents=True, exist_ok=True)
     record = target / VIEWS_RECORD
     views = json.loads(record.read_text()) if record.exists() else {}
     scene = None
-    for view in only or VIEWS:
+    for view in only or RENDERED_VIEWS:
         if view in views:
             continue
         if scene is None:
@@ -228,7 +254,8 @@ def build(area: Area, only: list[str] | None = None) -> None:
         _render_view(area, scene, view)
         views[view] = _view_entry(area, view, target)
         record.write_text(json.dumps(views, indent=2) + "\n")
-        if view != DEFAULT_VIEW:
-            shutil.rmtree(frames_dir(area, view))
-    if all(view in views for view in VIEWS):
-        _write_indexes(area, target, {view: views[view] for view in VIEWS})
+        shutil.rmtree(frames_dir(area, view))
+    if all(view in views for view in RENDERED_VIEWS):
+        if not manifest_path(area).exists():
+            plan_view(area, scene or load_scene(area), DEFAULT_VIEW)
+        _write_indexes(area, target, {view: views[view] for view in RENDERED_VIEWS})

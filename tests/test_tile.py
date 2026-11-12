@@ -2,9 +2,9 @@ import geopandas as gpd
 from shapely.geometry import LineString
 
 from manipur.areas import Area
-from manipur.detail import PROJECTION
+from manipur.detail import PROJECTION, VIEWS
 from manipur.prepare import METRIC_CRS, derived_path
-from manipur.tile import flow_lines, pyramid_version
+from manipur.tile import flow_lines, link_frames, pyramid_version
 
 
 def test_pyramid_version_follows_the_frame_bytes(tmp_path):
@@ -51,3 +51,9 @@ def test_flow_lines_name_rivers_only(tmp_path, monkeypatch):
     frame.to_file(path, layer="waterways", driver="GPKG")
 
     assert [line.get("name") for line in flow_lines(area, 0.0, 0.0)] == [None, None]
+
+
+def test_link_frames_cover_every_view_links_may_name():
+    frames = link_frames()
+    assert set(frames) == set(VIEWS)
+    assert all(len(frame["matrix"]) == 4 for frame in frames.values())

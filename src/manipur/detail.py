@@ -50,7 +50,11 @@ CROP_CENTERS = {"loktak": (93.8160, 24.4790)}
 CROP_PX = 900
 PROJECTION = PROJECTION_B
 # The chosen projection turned in 15 degree steps, named for the turn from the default.
+# All 24 stay defined, since links shared while each was on the site name them.
 VIEWS = {str(turn): (45.0 + turn) % 360 for turn in range(0, 360, 15)}
+# The views the site shows: north up first, then each quarter turn clockwise.
+RENDERED_VIEWS = ("315", "45", "135", "225")
+# The frame links, search, and flow lines are written in. It is planned, not rendered.
 DEFAULT_VIEW = "0"
 SPRITE_DIR = Path("assets/sprites")
 LANDMARKS_PATH = Path("assets/landmarks.json")
@@ -1846,29 +1850,18 @@ def frames(area: Area, only: list[tuple[int, int]] | None = None) -> None:
     scene = load_scene(area)
     np.save(trees_path(area), scene.trees)
     print(f"{area.name}: {len(scene.trees)} trees")
-    for view in VIEWS:
+    plan_view(area, scene, DEFAULT_VIEW)
+    for view in RENDERED_VIEWS:
         _render_view(area, scene, view, only)
     print(f"done in {time.perf_counter() - started:.0f}s")
 
 
-def _render_view(
-    area: Area, scene: Scene, view: str, only: list[tuple[int, int]] | None = None
-) -> None:
-    started = time.perf_counter()
+def plan_view(area: Area, scene: Scene, view: str) -> None:
+    """Write a view's manifest, its canvas and frame grid, without rendering a frame."""
     projection = view_projection(view)
     canvas = full_viewport(projection, scene.layers)
     columns, rows = frame_grid(canvas)
-    print(f"{view}: {columns} x {rows} frames")
-    directory = frames_dir(area, view)
-    directory.mkdir(parents=True, exist_ok=True)
-    cells = only or [(column, row) for row in range(rows) for column in range(columns)]
-    context = multiprocessing.get_context("spawn")
-    with context.Pool(WORKERS, _init_worker, (area, canvas, view)) as pool:
-        for count, _ in enumerate(pool.imap_unordered(_render_and_save, cells), 1):
-            if count % 10 == 0 or count == len(cells):
-                print(
-                    f"{count}/{len(cells)} frames, {time.perf_counter() - started:.0f}s", flush=True
-                )
+    manifest_path(area, view).parent.mkdir(parents=True, exist_ok=True)
     manifest_path(area, view).write_text(
         json.dumps(
             {
@@ -1890,3 +1883,24 @@ def _render_view(
         )
         + "\n"
     )
+
+
+def _render_view(
+    area: Area, scene: Scene, view: str, only: list[tuple[int, int]] | None = None
+) -> None:
+    started = time.perf_counter()
+    projection = view_projection(view)
+    canvas = full_viewport(projection, scene.layers)
+    columns, rows = frame_grid(canvas)
+    print(f"{view}: {columns} x {rows} frames")
+    directory = frames_dir(area, view)
+    directory.mkdir(parents=True, exist_ok=True)
+    cells = only or [(column, row) for row in range(rows) for column in range(columns)]
+    context = multiprocessing.get_context("spawn")
+    with context.Pool(WORKERS, _init_worker, (area, canvas, view)) as pool:
+        for count, _ in enumerate(pool.imap_unordered(_render_and_save, cells), 1):
+            if count % 10 == 0 or count == len(cells):
+                print(
+                    f"{count}/{len(cells)} frames, {time.perf_counter() - started:.0f}s", flush=True
+                )
+    plan_view(area, scene, view)

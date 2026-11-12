@@ -69,8 +69,8 @@ uv run python tools/draw_sprites.py      # redraws the landmark sprites in asset
 uv run python tools/phumdi_options.py    # writes the phumdi style sheet to out/loktak/
 uv run python tools/sangai_options.py    # writes the Sangai sprite sheet to out/loktak/
 uv run manipur overview --area manipur  # writes a top-down state check from land cover and terrain to out/manipur/
-uv run manipur build --area valley       # renders and tiles the site's 24 views one at a time; resumes if stopped
-uv run manipur frames --area imphal      # renders all 24 views as seamless 2048 px frames
+uv run manipur build --area valley       # renders and tiles the site's four views one at a time; resumes if stopped
+uv run manipur frames --area imphal      # renders the four views as seamless 2048 px frames
 uv run manipur tile   --area imphal      # builds each view's Deep Zoom pyramid and the search index
 pnpm --dir web install && pnpm --dir web build   # builds the viewer into web/dist
 mise run dev                             # live-reloading viewer with local tiles: http://localhost:8645 (MAP_AREA=<area> for another)

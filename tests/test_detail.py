@@ -12,6 +12,7 @@ from manipur.detail import (
     DEFAULT_VIEW,
     FRAME_PX,
     LANDMARKS_PATH,
+    RENDERED_VIEWS,
     SLOTS_32,
     STYLE_PAINTERS,
     TRANSPARENT,
@@ -95,6 +96,14 @@ def test_views_are_quarter_turns_of_the_chosen_projection():
     a, b, _, _ = view_projection("0").matrix
     next_a, next_b, _, _ = view_projection("90").matrix
     assert (round(next_a, 6), round(next_b, 6)) == (round(-b, 6), round(a, 6))
+
+
+def test_the_site_shows_four_quarter_turns_north_up_first():
+    assert RENDERED_VIEWS[0] == "315"
+    assert view_projection("315").rotation_deg == 0
+    turns = [VIEWS[view] for view in RENDERED_VIEWS]
+    assert turns == [0.0, 90.0, 180.0, 270.0]
+    assert DEFAULT_VIEW not in RENDERED_VIEWS
 
 
 def test_low_house_veranda_reaches_past_the_plain_roof():

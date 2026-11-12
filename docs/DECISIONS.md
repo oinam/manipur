@@ -443,3 +443,28 @@ middle of the screen and turned along it, never upside down; panning slides it a
 the river. Longer rivers claim their spot first when two labels would meet, and none
 show when the whole valley is in view. They are italic and pale blue, a placeholder
 style for Brajeshwar to settle.
+
+## 2026-11-12 — Four views, north up
+
+Brajeshwar cut the turns from 24 views in 15 degree steps to four quarter turns, since
+every view is rendered, stored, and uploaded for every place the map grows to: about
+1 GB and half an hour per view for the valley. The site shows 315 (north up, where it
+now opens), 45, 135, and 225; `RENDERED_VIEWS` in `detail.py` names them, and `frames`
+and `build` render only those.
+
+View 0 is still the frame that search places, flow lines, and links are written in, so
+none of those files changed. It is planned, its canvas and offsets written to
+`manifest.json`, but never rendered. Links shared earlier can name any of the 24 views;
+the site manifest now carries every view's frame in the original Imphal canvas
+(`links`, from `assets/hash_origin.json`), and the viewer opens such a link at the same
+spot in the nearest view it shows, north up when two are as near. A bare link, which
+meant view 0, opens north up.
+
+The other 20 views' pyramids are gone from R2. Their local copies, about 20 GB, are in
+`out/valley/retired/` on the external drive, with the full 24-view `views.json`, outside
+`tiles/` so a re-tile cannot delete them. To bring one back, move its pyramid into
+`tiles/pyramid/`, add it to `RENDERED_VIEWS` and `tiles/views.json`, and upload.
+
+The viewer reads its views from the manifest instead of a fixed list, so it works with
+either manifest, which set the order: push and deploy, upload the four-view manifest,
+check the site, then delete from R2.

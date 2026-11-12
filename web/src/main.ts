@@ -11,10 +11,13 @@ import { startWater } from "./water";
 import {
   DEFAULT_VIEW,
   FORMER_VIEWS,
+  LINK_VIEWS,
   NORTH_UP_VIEW,
-  VIEW_ORDER,
   convertPoint,
+  nearestView,
   northAngle,
+  viewOrder,
+  type Frame,
   type View,
 } from "./views";
 
@@ -123,7 +126,14 @@ function imageZoomToViewport(zoom: number): number {
 
 // Links, and the targets written here, keep pixel positions in the original Imphal canvas
 // so that links shared before the map grew still land in the same place.
+// A link naming a view the site no longer shows opens in the nearest one it does.
 function fromLink(target: Target): Target {
+  const frame = links[target.view];
+  if (frame) {
+    const view = views[target.view] ? target.view : nearestView(target.view, viewOrder(views));
+    const [x, y] = convertPoint(target.x, target.y, frame, viewData(view));
+    return { ...target, x, y, view };
+  }
   const [dx, dy] = viewData(target.view).hash_shift ?? [0, 0];
   return { ...target, x: target.x - dx, y: target.y - dy };
 }
@@ -135,7 +145,7 @@ function readHash(): Target | null {
   if (parts.length < 3 || parts.length > 4 || ![zoom, x, y].every(Number.isFinite)) {
     return null;
   }
-  return VIEW_ORDER.includes(view) ? { zoom, x, y, view } : null;
+  return LINK_VIEWS.includes(view) ? { zoom, x, y, view } : null;
 }
 
 function goTo(x: number, y: number, imageZoom: number, immediately: boolean): void {
@@ -194,6 +204,10 @@ function updateCorrectionLink(): void {
 const correctionLink = byId("correction", HTMLAnchorElement);
 const needle = byId("needle", HTMLElement);
 let views: Record<string, View> = {};
+// Each view's frame in the original Imphal canvas, where links keep their pixels.
+let links: Record<string, Frame> = {};
+// The default view's frame, which search places and flow lines are written in.
+let indexFrame: Frame | null = null;
 let areaName = "imphal";
 let currentView = DEFAULT_VIEW;
 let pendingTarget: Target | null = null;
@@ -225,7 +239,7 @@ function showMarker(x: number, y: number): void {
 }
 
 function toCurrentView(x: number, y: number): [number, number] {
-  return convertPoint(x, y, viewData(DEFAULT_VIEW), viewData(currentView));
+  return convertPoint(x, y, indexFrame ?? viewData(DEFAULT_VIEW), viewData(currentView));
 }
 
 function viewData(name: string): View {
@@ -273,8 +287,9 @@ function holdPicture(): void {
 }
 
 function rotateView(step: number): void {
-  const count = VIEW_ORDER.length;
-  turnTo(VIEW_ORDER[(VIEW_ORDER.indexOf(currentView) + step + count) % count]);
+  const order = viewOrder(views);
+  const count = order.length;
+  turnTo(order[(order.indexOf(currentView) + step + count) % count]);
 }
 
 function turnTo(next: string | undefined): void {
@@ -468,11 +483,25 @@ let places: Place[] = [];
 
 fetch(MANIFEST)
   .then((response) => response.json())
-  .then((manifest: { area?: string; views: Record<string, View> }) => {
-    views = manifest.views;
-    areaName = manifest.area ?? areaName;
-    openView(fromLink(readHash() ?? (AIRCRAFT_DEMO ? DEMO_OPENING_VIEW : OPENING_VIEW)));
-  })
+  .then(
+    (
+      manifest: Partial<Frame> & {
+        area?: string;
+        views: Record<string, View>;
+        links?: Record<string, Frame>;
+      },
+    ) => {
+      views = manifest.views;
+      links = manifest.links ?? {};
+      const { matrix, x_offset, y_offset } = manifest;
+      indexFrame =
+        matrix && x_offset !== undefined && y_offset !== undefined
+          ? { matrix, x_offset, y_offset }
+          : null;
+      areaName = manifest.area ?? areaName;
+      openView(fromLink(readHash() ?? (AIRCRAFT_DEMO ? DEMO_OPENING_VIEW : OPENING_VIEW)));
+    },
+  )
   .catch((error: unknown) => {
     console.error("Tile manifest failed to load", error);
   });

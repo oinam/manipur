@@ -95,6 +95,7 @@ const SHORTCUTS: [string, string, number][] = [
   ["War Cemetery", "Imphal War Cemetery", SHORTCUT_ZOOM],
   ["Loktak", "Thanga", 0.15],
   ["Keibul Lamjao", "Sangai viewpoint", 0.6],
+  ["Oinam", "Oinam", 0.3],
 ];
 
 function byId<T extends HTMLElement>(id: string, type: new () => T): T {

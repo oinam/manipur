@@ -5,6 +5,7 @@
 uv = "0.9.18"
 node = "22"
 pnpm = "12.8.1"
+rclone = "1.75.2"
 
 [env]
 # Secrets live in .env, which git ignores; .env.example lists the names.

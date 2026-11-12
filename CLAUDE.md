@@ -74,7 +74,7 @@ uv run manipur frames --area imphal      # renders all 24 views as seamless 2048
 uv run manipur tile   --area imphal      # builds each view's Deep Zoom pyramid and the search index
 pnpm --dir web install && pnpm --dir web build   # builds the viewer into web/dist
 mise run dev                             # live-reloading viewer with local tiles: http://localhost:8645 (MAP_AREA=<area> for another)
-uv run python tools/upload_tiles.py [area]  # uploads an area's finished tile pyramids (default valley), then its index files, to R2
+uv run python tools/upload_tiles.py [area]  # uploads an area's finished tile pyramids (default valley), then its index files, to R2 with rclone; needs the R2 keys in .env
 uv run python tools/upload_tiles.py --pyramids-only  # the pyramids alone; safe mid-build, and before a push that changes how the viewer reads them
 mise run schedule-on                     # uploads finished pyramids nightly from 22:00 to 5:00 at two files a second; schedule-off removes it
 mise run live                            # local aircraft Worker and built viewer: http://localhost:8644

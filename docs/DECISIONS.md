@@ -415,3 +415,19 @@ uploader worked out its 5:00 deadline, so it took the next 5:00, a day later, an
 going through the morning. The agent now runs as Standard, since it is paced by the
 network and gains nothing from a lower tier, and the deadline is fixed before the first
 read.
+
+## 2026-11-12 — Tiles go up through R2's S3 endpoint
+
+Two files a second meant about ten nights for the valley. The four-a-second limit belongs
+to Cloudflare's account API, which `wrangler r2 bulk put` goes through; R2's
+S3-compatible endpoint does not share it. `tools/upload_tiles.py` now copies each
+finished pyramid with rclone over that endpoint, 32 files at a time, which should put the
+valley up in an hour or two. rclone lists what the bucket has and sends only what is
+missing, so the per-batch records are gone and a pyramid is recorded once it is complete.
+Headers stay as before: a year's immutable caching for tiles, `no-cache` for the index
+files, which still go last.
+
+It needs an R2 API token limited to Object Read & Write on `manipur-tiles`, kept in
+`.env` as `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`; rclone is pinned in mise and
+configured from those, with no config file. The nightly schedule stays until one fast
+run has gone through, then goes.

@@ -1,23 +1,24 @@
 """Upload each tile pyramid that R2 does not have yet; pyramids never change once named.
 
-Batches are recorded as they finish, so a stopped run picks up where it left off. The
-index files go last, so the manifest never names a pyramid R2 does not have yet. Only the
-pyramids of views the build has recorded as finished go up, so it is safe to run while
-`manipur build` is still working. With --pyramids-only it stops before the index files,
-which switch the live site over; send those once the code that reads them is deployed.
-With --until=HH:MM it stops starting new batches at that local time, so the nightly job
-(launchd/com.oinam.manipur.upload.plist) keeps to its window. Cloudflare's API allows
-about four requests a second; uploads keep to half that, so they never trip its limit.
+Files go up with rclone through R2's S3-compatible endpoint, which, unlike the account API
+behind `wrangler r2 bulk put`, has no limit of a few requests a second. rclone lists what
+the bucket already has and sends only what is missing, so a stopped run picks up where it
+left off; each pyramid is recorded once it is complete. The index files go last, so the
+manifest never names a pyramid R2 does not have yet. Only the pyramids of views the build
+has recorded as finished go up, so it is safe to run while `manipur build` is still
+working. With --pyramids-only it stops before the index files, which switch the live site
+over; send those once the code that reads them is deployed. With --until=HH:MM it starts
+no new pyramid after that local time.
+
+Needs R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY in .env: an R2 API token with Object Read
+& Write on the bucket.
 """
 
 import json
 import os
 import subprocess
 import sys
-import tempfile
-import time
 from datetime import datetime, timedelta
-from itertools import batched
 from pathlib import Path
 
 BUCKET = "manipur-tiles"
@@ -33,43 +34,44 @@ INDEX_CACHE_CONTROL = "no-cache"
 CONTENT_TYPES = {".webp": "image/webp", ".dzi": "application/xml"}
 VIEWS_RECORD = TILES / "views.json"
 INDEXES = ("manifest.json", "search.json", "flow.json", "credits.json")
-BATCH_FILES = 200
-# wrangler's default of 20 at once drew "429: Too Many Requests" on most batches.
-CONCURRENCY = 2
-FILES_PER_SECOND = 2
-ATTEMPTS = 8
-RETRY_SECONDS = 20
+TRANSFERS = 32
+ATTEMPTS = 5
 
 
-def put_with_retries(
-    entries: list[dict], content_type: str, cache_control: str = CACHE_CONTROL
+def rclone_env() -> dict[str, str]:
+    """An `r2` remote for rclone, configured from the environment rather than a file."""
+    missing = [
+        name for name in ("R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY") if not os.environ.get(name)
+    ]
+    if missing:
+        sys.exit(f"Set {' and '.join(missing)} in .env (see .env.example).")
+    return {
+        **os.environ,
+        "RCLONE_CONFIG_R2_TYPE": "s3",
+        "RCLONE_CONFIG_R2_PROVIDER": "Cloudflare",
+        "RCLONE_CONFIG_R2_ACCESS_KEY_ID": os.environ["R2_ACCESS_KEY_ID"],
+        "RCLONE_CONFIG_R2_SECRET_ACCESS_KEY": os.environ["R2_SECRET_ACCESS_KEY"],
+        "RCLONE_CONFIG_R2_ENDPOINT": f"https://{ACCOUNT_ID}.r2.cloudflarestorage.com",
+        # The token reaches objects only, so rclone must not try to create the bucket.
+        "RCLONE_CONFIG_R2_NO_CHECK_BUCKET": "true",
+    }  # fmt: skip
+
+
+def copy(
+    env: dict[str, str], source: Path, dest: str, content_type: str, cache_control: str, *flags: str
 ) -> None:
-    for attempt in range(1, ATTEMPTS + 1):
-        try:
-            put(entries, content_type, cache_control)
-            return
-        except subprocess.CalledProcessError:
-            if attempt == ATTEMPTS:
-                raise
-            print(f"batch failed, retry {attempt}", flush=True)
-            time.sleep(RETRY_SECONDS * attempt)
-
-
-def put(entries: list[dict], content_type: str, cache_control: str) -> None:
-    with tempfile.NamedTemporaryFile("w", suffix=".json") as listing:
-        json.dump(entries, listing)
-        listing.flush()
-        subprocess.run(
-            [
-                "pnpm", "exec", "wrangler", "r2", "bulk", "put", BUCKET,
-                "--remote", "--force", "--filename", listing.name,
-                "--content-type", content_type, "--cache-control", cache_control,
-                "--concurrency", str(CONCURRENCY),
-            ],
-            cwd="web",
-            env={**os.environ, "CLOUDFLARE_ACCOUNT_ID": ACCOUNT_ID},
-            check=True,
-        )  # fmt: skip
+    subprocess.run(
+        [
+            "rclone", "copy", str(source), f"r2:{BUCKET}/{dest}",
+            "--header-upload", f"Content-Type: {content_type}",
+            "--header-upload", f"Cache-Control: {cache_control}",
+            "--transfers", str(TRANSFERS), "--checkers", str(TRANSFERS),
+            "--retries", str(ATTEMPTS), "--fast-list", "--stats-one-line", "--stats", "30s",
+            *flags,
+        ],
+        env=env,
+        check=True,
+    )  # fmt: skip
 
 
 def deadline() -> datetime | None:
@@ -95,28 +97,28 @@ def ready(finished: set[str], done: set[str]) -> bool:
 
 def main() -> None:
     stop = deadline()  # before touching the drive, so a slow first read can't move it a day
+    env = rclone_env()
     done = set(json.loads(DONE.read_text())) if DONE.exists() else set()
     finished = {view["pyramid"] for view in json.loads(VIEWS_RECORD.read_text()).values()}
     for pyramid in sorted((TILES / "pyramid").iterdir()):
         if pyramid.name in done or pyramid.name not in finished:
             continue
+        if stop and datetime.now() >= stop:
+            print(f"stopped at {UNTIL}, {len(finished & done)} of {len(finished)} uploaded")
+            return
         for suffix, content_type in CONTENT_TYPES.items():
-            entries = [
-                {"key": str(path.relative_to(TILES)), "file": str(path)}
-                for path in sorted(pyramid.rglob(f"*{suffix}"))
-            ]
-            for index, batch in enumerate(batched(entries, BATCH_FILES)):
-                mark = f"{pyramid.name}{suffix}:{index}"
-                if mark in done:
-                    continue
-                if stop and datetime.now() >= stop:
-                    print(f"stopped at {UNTIL}, {len(finished & done)} of {len(finished)} uploaded")
-                    return
-                started = time.monotonic()
-                put_with_retries(list(batch), content_type)
-                time.sleep(max(0, len(batch) / FILES_PER_SECOND - (time.monotonic() - started)))
-                done.add(mark)
-                DONE.write_text(json.dumps(sorted(done)))
+            # Tiles are named by content and never rewritten, so a size match is enough.
+            dest = f"pyramid/{pyramid.name}"
+            copy(
+                env,
+                pyramid,
+                dest,
+                content_type,
+                CACHE_CONTROL,
+                "--include",
+                f"*{suffix}",
+                "--size-only",
+            )
         done.add(pyramid.name)
         DONE.write_text(json.dumps(sorted(done)))
         print(f"{pyramid.name}: uploaded", flush=True)
@@ -127,8 +129,19 @@ def main() -> None:
         return
     if not ready(finished, done):
         sys.exit("The manifest is not ready to publish: wait for the build, then upload again.")
-    indexes = [{"key": name, "file": str(TILES / name)} for name in INDEXES]
-    put_with_retries(indexes, "application/json", INDEX_CACHE_CONTROL)
+    # Always sent, since an index can change without changing size.
+    indexes = [flag for name in INDEXES for flag in ("--include", name)]
+    copy(
+        env,
+        TILES,
+        "",
+        "application/json",
+        INDEX_CACHE_CONTROL,
+        *indexes,
+        "--ignore-times",
+        "--max-depth",
+        "1",
+    )
     print("indexes: uploaded", flush=True)
 
 

@@ -15,8 +15,7 @@ import {
 // 22 at its scheduled (or revised) time, taxis to a stand, and waits there for the same
 // airline's next departure, which pushes back, taxis out, and takes off at its own time.
 // A plane with no departure after it stays overnight; a departure with nothing before it
-// starts the day parked. They are labeled as not live, and give way to a live plane with
-// the same callsign.
+// starts the day parked. They are labeled as not live.
 
 interface Scheduled {
   number: string;

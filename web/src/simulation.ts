@@ -2,9 +2,9 @@ import type { Feed, Snapshot } from "./aircraft";
 import { landing, onRunway } from "./runway";
 
 // A made-up arrival on runway 22, repeating every five minutes, for trying the layer
-// without live data. It is labeled as simulated wherever it is drawn.
+// without a timetable. It is labeled as simulated wherever it is drawn.
 
-const SNAPSHOT_MS = 20_000; // the server polls this often while a flight is near
+const SNAPSHOT_MS = 20_000;
 const CYCLE_S = 300;
 const APPROACH_M = 12_000;
 // The approach starts the cycle; touchdown comes this many seconds in.

@@ -145,7 +145,7 @@ export function startAircraft(
   }
 
   // Every plane now, with its feed's label; an earlier feed's plane hides a later one's
-  // with the same callsign, so a live plane replaces its timetable stand-in.
+  // with the same callsign.
   function planesNow(): [Aircraft, string][] {
     const shown = new Set<string>();
     return feeds.flatMap((feed) => {

@@ -4,7 +4,7 @@ import process from "node:process";
 import { defineConfig } from "vite";
 
 // Both local servers pass the aircraft API to `wrangler dev` on port 8790 (`mise run api`),
-// so live planes and the timetable can be tried before anything is deployed. `vite preview`
+// so the timetable and its planes can be tried before anything is deployed. `vite preview`
 // serves the built map, whose tiles are linked into dist; the dev server serves them
 // straight from the render output.
 const API = { "/api": "http://localhost:8790" };

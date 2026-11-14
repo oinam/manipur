@@ -1,17 +1,9 @@
 // The info panel, which opens at the bottom left and can be dragged elsewhere. It has
 // tabs, and collapses to just them and the weather. One tab holds places to go to; the
-// other holds today's timetable at Imphal, marking the flights OpenSky heard nearby, or
-// without a timetable what OpenSky saw instead.
+// other holds today's timetable at Imphal.
 
 import { flightId } from "./timetable";
 import { startWeather } from "./weather";
-
-interface Flight {
-  callsign: string;
-  kind: "arrival" | "departure" | "passing";
-  time: number;
-  km: number;
-}
 
 interface Scheduled {
   number: string;
@@ -59,15 +51,10 @@ const DATE = new Intl.DateTimeFormat("en-US", {
 const NEAR_MS = 10 * 60_000;
 // A status this long past the scheduled time is likely stale, so it is not shown.
 const STALE_STATUS_MS = 3_600_000;
-const SEEN_MARK = "✓";
-const SIGHTINGS_NOTE =
-  "Times in IST, two minutes late, from The OpenSky Network. Its receivers rarely reach the " +
-  "valley floor, so most flights show only as passing.";
 const SCHEDULE_NOTE =
-  `Scheduled times in IST from AeroDataBox, landing and leaving at Imphal; airlines may change ` +
+  "Scheduled times in IST from AeroDataBox, landing and leaving at Imphal; airlines may change " +
   "them. Each flight is drawn on the map landing or taking off at its time, labeled " +
-  `"scheduled, not live". ${SEEN_MARK} marks a flight OpenSky heard within 150 km; its ` +
-  "receivers lose most flights over the hills, so a live plane rarely reaches the map.";
+  '"scheduled, not live".';
 
 function element<T extends HTMLElement>(id: string, type: new () => T): T {
   const found = document.getElementById(id);
@@ -253,16 +240,6 @@ function startDrag(panel: HTMLElement): void {
   new ResizeObserver(replace).observe(panel);
 }
 
-function describe(flight: Flight): string {
-  if (flight.kind === "arrival") {
-    return "landed";
-  }
-  if (flight.kind === "departure") {
-    return "took off";
-  }
-  return `passed, ${String(flight.km)} km`;
-}
-
 function row(...cells: [string, string?][]): HTMLLIElement {
   const item = document.createElement("li");
   for (const [text, className] of cells) {
@@ -299,7 +276,6 @@ function statusOf(flight: Scheduled, now: number): string {
 function renderSchedule(
   container: HTMLElement,
   schedule: Schedule,
-  seen: Set<string>,
   focus: (id: string) => void,
 ): void {
   const now = Date.now();
@@ -310,7 +286,6 @@ function renderSchedule(
         [flight.number],
         [`${preposition} ${flight.place}`, "place"],
         [statusOf(flight, now), "kind"],
-        [flight.callsign && seen.has(flight.callsign) ? SEEN_MARK : "", "seen"],
       );
       const near = Math.abs((flight.revised ?? flight.time) - now) <= NEAR_MS;
       item.classList.toggle("past", isPast(flight, now) && !near);
@@ -338,17 +313,6 @@ function renderSchedule(
   );
 }
 
-function renderSightings(container: HTMLElement, flights: Flight[]): void {
-  container.replaceChildren(
-    ...section(
-      "Seen near Imphal",
-      flights.map((flight) =>
-        row([TIME.format(flight.time)], [flight.callsign], [describe(flight), "kind"]),
-      ),
-    ),
-  );
-}
-
 export function startInfo(focus: (id: string) => void): void {
   const panel = element("info", HTMLElement);
   const flights = element("flights", HTMLDivElement);
@@ -367,18 +331,13 @@ export function startInfo(focus: (id: string) => void): void {
       if (!response.ok) {
         throw new Error(`Aircraft API ${String(response.status)}`);
       }
-      const { today = [], schedule } = (await response.json()) as {
-        today?: Flight[];
-        schedule?: Schedule;
-      };
+      const { schedule } = (await response.json()) as { schedule?: Schedule };
       if (schedule && schedule.arrivals.length + schedule.departures.length > 0) {
-        renderSchedule(flights, schedule, new Set(today.map((flight) => flight.callsign)), focus);
+        renderSchedule(flights, schedule, focus);
         note.textContent = SCHEDULE_NOTE;
       } else {
-        renderSightings(flights, today);
-        note.textContent = today.length
-          ? SIGHTINGS_NOTE
-          : `No airline flights seen near Imphal yet today. ${SIGHTINGS_NOTE}`;
+        flights.replaceChildren();
+        note.textContent = "Today's timetable at Imphal is not available yet.";
       }
     } catch {
       flights.replaceChildren();

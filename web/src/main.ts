@@ -1,7 +1,6 @@
 import OpenSeadragon from "openseadragon";
 import { startAircraft, toImage, type AircraftLayer } from "./aircraft";
 import { startInfo } from "./info";
-import { liveFeed } from "./live";
 import { startRivers } from "./rivers";
 import { SANGAI_HERD, startSangai } from "./sangai";
 import { simulatedArrival } from "./simulation";
@@ -43,8 +42,8 @@ interface Label {
 
 const MANIFEST = `${TILE_BASE}manifest.json`;
 const STILL_MAX_MS = 4000;
-// Live planes come from the Worker; ?aircraft=demo shows a simulated arrival instead,
-// and ?aircraft=off shows none.
+// Planes are drawn from the Worker's timetable; ?aircraft=demo shows a simulated arrival
+// instead, and ?aircraft=off shows none.
 const AIRCRAFT_MODE = new URLSearchParams(location.search).get("aircraft");
 const AIRCRAFT_DEMO = AIRCRAFT_MODE === "demo";
 const SEARCH_INDEX = `${TILE_BASE}search.json`;
@@ -62,7 +61,7 @@ const OPENING_VIEW: Target = { x: 18900, y: 8400, zoom: 0.5, view: DEFAULT_VIEW 
 // The demo opens on the final approach to runway 22, where the simulated plane flies.
 const DEMO_OPENING_VIEW: Target = { x: 8800, y: 8700, zoom: 0.35, view: DEFAULT_VIEW };
 // The middle of runway 04/22 (OSM way 44884414), where the panel looks for a plane it
-// cannot find in the live feed.
+// cannot find on the map.
 const RUNWAY_MIDDLE = { lon: 93.8972, lat: 24.7596 };
 const AIRPORT_ZOOM = 0.35;
 const PLANE_ZOOM = 0.6;
@@ -219,7 +218,7 @@ let rivers: ReturnType<typeof startRivers> | null = null;
 let marker: HTMLElement | null = null;
 let aircraft: AircraftLayer | null = null;
 
-// Brings a flight from the airplanes panel into view: its plane, live or from the timetable,
+// Brings a flight from the airplanes panel into view: its plane from the timetable,
 // otherwise the runway it is about to use.
 function focusFlight(id: string): void {
   const plane = aircraft?.locate(id);
@@ -322,7 +321,7 @@ viewer.addHandler("open", () => {
     water = startWater(viewer, byId("animation", HTMLInputElement), toCurrentView);
     rivers = startRivers(viewer, toCurrentView);
     if (AIRCRAFT_MODE !== "off") {
-      const feeds = AIRCRAFT_DEMO ? [simulatedArrival] : [liveFeed, timetableFeed];
+      const feeds = AIRCRAFT_DEMO ? [simulatedArrival] : [timetableFeed];
       aircraft = startAircraft(viewer, () => viewData(currentView), feeds);
     }
     startSangai(viewer, () => viewData(currentView), byId("animation", HTMLInputElement));

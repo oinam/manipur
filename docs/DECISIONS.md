@@ -487,3 +487,20 @@ reading. The weather is words only; it does not change the map.
 The panel now drags by its bar and remembers where it was left, in the browser's own
 storage. It is placed by its left and bottom edges, so collapsing still folds it
 downward. A double click on the bar puts it back in its corner.
+
+## 2026-11-14 — OpenSky off the site
+
+OpenSky's staff answered the license request on 2026-11-11: a live public site needs a
+written license even when it is non-commercial and ad-free, they have no free one, and
+theirs costs $99 a month. That overrides the automated reply the site had relied on.
+Its receivers never heard a flight within 125 km of Imphal anyway, so Brajeshwar chose
+not to pay and to take OpenSky out. This replaces "Live planes on the site" and "The
+Mac relays OpenSky" above.
+
+The Worker now serves only AeroDataBox's timetable. It no longer polls OpenSky or
+accepts the relay's posts, and the first request after the deploy deletes the snapshots
+and sightings it had kept. The viewer draws planes from the timetable alone, labeled
+"scheduled, not live"; the "2 min ago" planes, the panel's ticks, and its list of
+sightings are gone, with OpenSky's credit. `tools/log_aircraft.py` stays as a private
+coverage check and no longer posts to the site. A receiver near the airport is still
+the only way to real approaches, and is still open in `docs/AIRCRAFT.md`.

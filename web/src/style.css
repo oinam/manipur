@@ -286,14 +286,10 @@ button:focus-visible,
 
 #flights li {
   display: grid;
-  grid-template-columns: 3.2em 4.8em 1fr auto 1em;
+  grid-template-columns: 3.2em 4.8em 1fr auto;
   gap: 6px;
   padding: 2px 0;
   font-variant-numeric: tabular-nums;
-}
-
-#flights li:has(> :nth-child(3):last-child) {
-  grid-template-columns: 3.2em 5.5em 1fr;
 }
 
 #flights .place {
@@ -319,11 +315,6 @@ button:focus-visible,
 #flights li.near:focus-visible {
   background: var(--line);
   outline: none;
-}
-
-#flights .seen {
-  color: #8db9cd;
-  text-align: right;
 }
 
 .info .note {

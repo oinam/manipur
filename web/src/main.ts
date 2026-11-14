@@ -58,8 +58,8 @@ const SITE_URL = "https://manipur.oinam.com/";
 const NEW_ISSUE_URL = "https://github.com/oinam/manipur/issues/new";
 const NEAR_PLACE_MAX_PX = 800;
 const OPENING_VIEW: Target = { x: 18900, y: 8400, zoom: 0.5, view: DEFAULT_VIEW };
-// The demo opens on the final approach to runway 22, where the simulated plane flies.
-const DEMO_OPENING_VIEW: Target = { x: 8800, y: 8700, zoom: 0.35, view: DEFAULT_VIEW };
+// The demo opens on the final approach to runway 04, where the simulated plane flies.
+const DEMO_OPENING_VIEW: Target = { x: 2300, y: 9300, zoom: 0.35, view: DEFAULT_VIEW };
 // The middle of runway 04/22 (OSM way 44884414), where the panel looks for a plane it
 // cannot find on the map.
 const RUNWAY_MIDDLE = { lon: 93.8972, lat: 24.7596 };

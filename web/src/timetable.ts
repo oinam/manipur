@@ -4,6 +4,7 @@ import {
   STAND_COUNT,
   landing,
   onRunway,
+  onRunway04,
   parked,
   takeoff,
   taxiIn,
@@ -12,8 +13,8 @@ import {
 
 // Planes drawn from today's timetable, not from any receiver. Imphal has no hangar for
 // airliners, so each plane stays on the apron between flights: an arrival lands on runway
-// 22 at its scheduled (or revised) time, taxis to a stand, and waits there for the same
-// airline's next departure, which pushes back, taxis out, and takes off at its own time.
+// 04 at its scheduled (or revised) time, taxis to a stand, and waits there for the same
+// airline's next departure, which pushes back, taxis out, and takes off on 22 at its own time.
 // A plane with no departure after it stays overnight; a departure with nothing before it
 // starts the day parked. They are labeled as not live.
 
@@ -156,7 +157,7 @@ function place(visit: Visit, time: number): Aircraft | null {
     const seconds = (time - timeOf(arrival)) / 1000;
     if (seconds < LANDED_S) {
       const position = landing(seconds, PATH_M);
-      return position ? named(onRunway(...position, flightId(arrival)), arrival) : null;
+      return position ? named(onRunway04(...position, flightId(arrival)), arrival) : null;
     }
     return named(taxiIn(stand).at(seconds - LANDED_S, flightId(arrival)), arrival);
   }

@@ -1,8 +1,9 @@
 import type { Aircraft } from "./aircraft";
 
-// Runway 04/22 and the paths a plane follows around it: in to land on 22 from the
-// northeast, off at the southern taxiway to a stand on the apron, and back out by the
-// northern taxiway to the threshold of 22 for takeoff toward the southwest. Positions are
+// Runway 04/22 and the paths a plane follows around it: in to land on 04 from the
+// southwest, off at the southern taxiway to a stand on the apron, and back out by the
+// northern taxiway to the threshold of 22 for takeoff toward the southwest, the way it
+// came. Positions are
 // from OSM: runway way 44884414, taxiways 788999103 and 151116252, apron 151116248.
 // Shared by the simulated arrival and the timetable.
 
@@ -16,9 +17,11 @@ const GLIDE = Math.tan((3 * Math.PI) / 180);
 const THRESHOLD_HEIGHT_M = 15;
 const TOUCHDOWN_M = 350;
 const TAXI_MPS = 8;
-// Slowed to taxi speed just before the southern exit, this far past the threshold of 22.
-const BRAKE_END_M = 1_150;
-const EXIT_M = 1_219;
+// The southern exit, this far past the threshold of 22, and so this far past that of 04.
+const EXIT_FROM_22_M = 1_219;
+const EXIT_M = RUNWAY_M - EXIT_FROM_22_M;
+// Slowed to taxi speed just before the exit.
+const BRAKE_END_M = EXIT_M - 69;
 const BRAKING = (APPROACH_MPS ** 2 - TAXI_MPS ** 2) / (2 * (BRAKE_END_M - TOUCHDOWN_M));
 const TAKEOFF_ACCELERATION = 2.2; // m/s²
 const LIFTOFF_MPS = 75;
@@ -74,7 +77,7 @@ function plane(at: LonLat, altitude: number, track: number, callsign: string): A
   return { callsign, lon: at[0], lat: at[1], altitude, track };
 }
 
-// Distance past the threshold of 22 and height, a number of seconds from touchdown;
+// Distance past the threshold of 04 and height, a number of seconds from touchdown;
 // null before the approach starts or once the plane has slowed at the southern exit.
 export function landing(fromTouchdown: number, approachM: number): [number, number] | null {
   if (fromTouchdown <= 0) {
@@ -104,7 +107,8 @@ export const LANDED_S = (() => {
   return braking + (EXIT_M - BRAKE_END_M) / TAXI_MPS;
 })();
 
-// The same, a number of seconds from the start of the takeoff roll at the threshold of 22.
+// Distance past the threshold of 22 and height, a number of seconds from the start of the
+// takeoff roll there.
 export function takeoff(fromRoll: number, climbM: number): [number, number] | null {
   if (fromRoll < 0) {
     return null;
@@ -121,6 +125,11 @@ export function takeoff(fromRoll: number, climbM: number): [number, number] | nu
 // A plane on the runway's line, this far past the threshold of 22, heading southwest.
 export function onRunway(along: number, altitude: number, callsign: string): Aircraft {
   return plane(runwayPoint(along), altitude, TRACK, callsign);
+}
+
+// A landing plane on the runway's line, this far past the threshold of 04, heading northeast.
+export function onRunway04(along: number, altitude: number, callsign: string): Aircraft {
+  return plane(runwayPoint(RUNWAY_M - along), altitude, (TRACK + 180) % 360, callsign);
 }
 
 interface Leg {
@@ -181,7 +190,13 @@ export function parked(stand: number, callsign: string): Aircraft {
 // From the southern exit to the stand.
 export function taxiIn(stand: number): Route {
   const { lane, spot } = standPoints(stand);
-  return route([{ points: [runwayPoint(EXIT_M), ...EXIT_SOUTH, lane, spot], speed: TAXI_MPS }]);
+  return route([
+    // The taxiway's first point is on the runway, a few meters back the way the plane came.
+    {
+      points: [runwayPoint(EXIT_FROM_22_M), ...EXIT_SOUTH.slice(1), lane, spot],
+      speed: TAXI_MPS,
+    },
+  ]);
 }
 
 // Pushed back from the stand, along the apron, out to the runway, and back up it to the

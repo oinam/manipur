@@ -504,3 +504,12 @@ and sightings it had kept. The viewer draws planes from the timetable alone, lab
 sightings are gone, with OpenSky's credit. `tools/log_aircraft.py` stays as a private
 coverage check and no longer posts to the site. A receiver near the airport is still
 the only way to real approaches, and is still open in `docs/AIRCRAFT.md`.
+
+## 2026-11-14 — Arrivals land from the southwest
+
+Brajeshwar pointed out that planes at Imphal land from the other end than the map
+showed. Arrivals now come in from the southwest and land on runway 04, heading
+northeast; departures still take off on 22 toward the southwest, which he confirmed is
+right. So planes arrive and leave over the same side. This replaces "both
+on runway 22" in "Planes from the timetable" above. A landing plane still leaves by the
+southern taxiway, which it now reaches about 1,500 m past the threshold.

@@ -1,7 +1,7 @@
 import type { Feed, Snapshot } from "./aircraft";
-import { landing, onRunway } from "./runway";
+import { landing, onRunway04 } from "./runway";
 
-// A made-up arrival on runway 22, repeating every five minutes, for trying the layer
+// A made-up arrival on runway 04, repeating every five minutes, for trying the layer
 // without a timetable. It is labeled as simulated wherever it is drawn.
 
 const SNAPSHOT_MS = 20_000;
@@ -12,7 +12,7 @@ const TOUCHDOWN_S = 170;
 
 function snapshot(time: number): Snapshot {
   const position = landing(((time / 1000) % CYCLE_S) - TOUCHDOWN_S, APPROACH_M);
-  return { time, aircraft: position ? [onRunway(...position, "DEMO1")] : [] };
+  return { time, aircraft: position ? [onRunway04(...position, "DEMO1")] : [] };
 }
 
 export const simulatedArrival: Feed = {

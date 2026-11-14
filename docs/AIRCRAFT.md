@@ -42,8 +42,8 @@ no live plane would have reached it even with a license.
    from `mise run dev` (port 8645) or `mise run live` (port 8644).
 2. **Timetable planes** (`web/src/timetable.ts`, paths in `web/src/runway.ts`): each
    scheduled flight is drawn as a plane labeled "scheduled, not live". An arrival lands
-   on runway 22 at its scheduled or revised time, after about six minutes of approach
-   from 25 km out, leaves by the southern taxiway, and parks nose-in at one of four
+   on runway 04, from the southwest, at its scheduled or revised time, after about six
+   minutes of approach from 25 km out, leaves by the southern taxiway, and parks nose-in at one of four
    stands on the apron (OSM way 151116248). Imphal has no hangar for airliners, so it
    waits there for the same airline's next departure at least 20 minutes later, which
    pushes back, taxis out by the northern taxiway, backtracks to the threshold of 22,
@@ -55,7 +55,7 @@ no live plane would have reached it even with a license.
    Animation off. Positions go from latitude and longitude to UTM in the browser
    (`web/src/utm.ts`), then through the current view's matrix, so a plane turns with
    every view. It is lifted by altitude and casts a shadow on the ground.
-   `?aircraft=demo` shows a simulated arrival on runway 22 (OSM way 44884414, 2,746 m)
+   `?aircraft=demo` shows a simulated arrival on runway 04 (OSM way 44884414, 2,746 m)
    every five minutes, labeled as simulated (`web/src/simulation.ts`). `?aircraft=off`
    shows no planes.
 4. **Info panel** (`web/src/info.ts`): today's timetable at Imphal, in IST, refreshed

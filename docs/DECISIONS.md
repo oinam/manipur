@@ -473,3 +473,17 @@ On 2026-11-12 Brajeshwar had every pyramid the live manifest does not name delet
 R2: the old Imphal map's 24 (about 3.5 GB; local copies stay in
 `out/imphal/tiles/pyramid/`) and `1b7ede2a65`, an unfinished upload with no `.dzi` and
 no local copy. The bucket now holds only the four live views and the index files.
+
+## 2026-11-14 — Weather in the info panel, read by the browser
+
+Brajeshwar asked for the current weather in the info panel, as on his Greenage map. The
+viewer asks Open-Meteo for Imphal's temperature, weather code, and wind when the page
+opens and every ten minutes after, and shows them in words in the panel's bar, where
+they stay when the panel is collapsed. The browser asks Open-Meteo directly, not through
+the Worker: there is no key to hide, each visitor's calls count against their own
+address and not one shared one, and a failed lookup just leaves the bar without a
+reading. The weather is words only; it does not change the map.
+
+The panel now drags by its bar and remembers where it was left, in the browser's own
+storage. It is placed by its left and bottom edges, so collapsing still folds it
+downward. A double click on the bar puts it back in its corner.

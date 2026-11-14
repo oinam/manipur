@@ -68,13 +68,14 @@
     </div>
 
     <section id="info" class="panel info" aria-label="Places and airplanes">
-      <div class="info-bar">
+      <div id="info-bar" class="info-bar" title="Drag to move; double-click to put back">
         <div class="tabs" role="tablist" aria-label="Info">
           <button id="tab-places" type="button" role="tab" aria-controls="places-tab">Go to</button>
           <button id="tab-planes" type="button" role="tab" aria-controls="planes-tab">
             Airplanes
           </button>
         </div>
+        <span id="weather" class="weather"></span>
         <button id="info-collapse" class="collapse" type="button" aria-controls="info-tabs">
           <span aria-hidden="true">▾</span>
         </button>
@@ -141,6 +142,10 @@
             Buildings, roofs, and trees are drawn from open data, so details may be wrong. Use
             Suggest a correction at the bottom right to report one.
           </li>
+          <li>
+            Drag the info panel by its top bar to move it; double-click the bar to put it back. The
+            bar shows the weather in Imphal right now, from Open-Meteo.
+          </li>
           <li>Water and other animation can be turned off in Settings (⚙).</li>
         </ul>
         <p><a href="/about.html">How this map was made, and full credits</a></p>
@@ -187,6 +192,7 @@
               <a href="https://opensky-network.org">The OpenSky Network</a>, shown two minutes late
             </li>
             <li>Flight schedules from <a href="https://aerodatabox.com">AeroDataBox</a></li>
+            <li>Weather by <a href="https://open-meteo.com/">Open-Meteo</a>, CC BY 4.0</li>
             <li>
               Landmarks drawn with reference to photographs on Wikimedia Commons, credited in full
               on the <a href="/about.html">about page</a>

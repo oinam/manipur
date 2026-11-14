@@ -161,6 +161,29 @@ button:focus-visible,
   border-bottom: 1px solid var(--line);
 }
 
+/* The bar is the panel's handle. */
+.info-bar {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.info.dragging .info-bar {
+  cursor: grabbing;
+}
+
+.weather {
+  flex: 1;
+  min-width: 0;
+  padding: 0 8px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .info.collapsed .info-bar {
   padding-bottom: 4px;
   border-bottom: 0;
@@ -316,6 +339,12 @@ button:focus-visible,
     bottom: 64px;
     width: auto;
   }
+}
+
+/* Once dragged, the panel is placed by its left and bottom edges alone. */
+.info.moved {
+  right: auto;
+  width: min(340px, calc(100vw - 32px));
 }
 
 .settings {

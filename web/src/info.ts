@@ -1,8 +1,10 @@
-// The info panel at the bottom left. It has tabs, and collapses to just them. One tab
-// holds places to go to; the other holds today's timetable at Imphal, marking the flights
-// OpenSky heard nearby, or without a timetable what OpenSky saw instead.
+// The info panel, which opens at the bottom left and can be dragged elsewhere. It has
+// tabs, and collapses to just them and the weather. One tab holds places to go to; the
+// other holds today's timetable at Imphal, marking the flights OpenSky heard nearby, or
+// without a timetable what OpenSky saw instead.
 
 import { flightId } from "./timetable";
+import { startWeather } from "./weather";
 
 interface Flight {
   callsign: string;
@@ -26,10 +28,21 @@ interface Schedule {
   departures: Scheduled[];
 }
 
+// Where a dragged panel sits: its left and bottom edges, in pixels from the screen's.
+interface Spot {
+  left: number;
+  bottom: number;
+}
+
 const API = "/api/aircraft";
 const RELOAD_MS = 60_000;
 const COLLAPSED_KEY = "info-collapsed";
 const TAB_KEY = "info-tab";
+const POSITION_KEY = "info-position";
+// A press that moves less than this is a click, not a drag.
+const DRAG_START_PX = 4;
+// The gap a dragged panel keeps from the edge of the screen.
+const EDGE_PX = 8;
 const TIME = new Intl.DateTimeFormat("en-IN", {
   timeZone: "Asia/Kolkata",
   hour: "2-digit",
@@ -77,6 +90,14 @@ function remember(key: string, value: string): void {
     localStorage.setItem(key, value);
   } catch {
     // the panel still works; it just opens in its default state next time
+  }
+}
+
+function forget(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // nothing was kept, so there is nothing to forget
   }
 }
 
@@ -133,6 +154,103 @@ function startTabs(panel: HTMLElement): void {
     choose(first);
   }
   setCollapsed(remembered(COLLAPSED_KEY) === "true");
+}
+
+// The panel moves by its bar, and a double click on the bar sends it back to its corner.
+// It is placed by its left and bottom edges, so it still folds downward wherever it
+// sits, and it is kept on screen.
+function startDrag(panel: HTMLElement): void {
+  const bar = element("info-bar", HTMLDivElement);
+  let spot: Spot | null = null;
+
+  const place = (left: number, bottom: number) => {
+    panel.classList.add("moved");
+    const limit = (value: number, most: number) =>
+      Math.round(Math.max(EDGE_PX, Math.min(value, most - EDGE_PX)));
+    spot = {
+      left: limit(left, innerWidth - panel.offsetWidth),
+      bottom: limit(bottom, innerHeight - panel.offsetHeight),
+    };
+    panel.style.left = `${String(spot.left)}px`;
+    panel.style.bottom = `${String(spot.bottom)}px`;
+  };
+  const replace = () => {
+    if (spot) {
+      place(spot.left, spot.bottom);
+    }
+  };
+
+  bar.addEventListener("pointerdown", (down) => {
+    if (down.button !== 0) {
+      return;
+    }
+    const box = panel.getBoundingClientRect();
+    const drag = new AbortController();
+    let dragging = false;
+    // On the window, since a quick pointer leaves the bar before the drag has begun.
+    addEventListener(
+      "pointermove",
+      (move) => {
+        const dx = move.clientX - down.clientX;
+        const dy = move.clientY - down.clientY;
+        if (!dragging && Math.hypot(dx, dy) < DRAG_START_PX) {
+          return;
+        }
+        if (!dragging) {
+          dragging = true;
+          bar.setPointerCapture(down.pointerId);
+          panel.classList.add("dragging");
+        }
+        place(box.left + dx, innerHeight - box.bottom - dy);
+      },
+      { signal: drag.signal },
+    );
+    const end = () => {
+      drag.abort();
+      panel.classList.remove("dragging");
+      if (!dragging) {
+        return;
+      }
+      remember(POSITION_KEY, JSON.stringify(spot));
+      // The release would otherwise count as a click on the tab the drag began on.
+      const swallow = new AbortController();
+      addEventListener(
+        "click",
+        (click) => {
+          click.stopPropagation();
+          click.preventDefault();
+        },
+        { capture: true, once: true, signal: swallow.signal },
+      );
+      setTimeout(() => {
+        swallow.abort();
+      });
+    };
+    addEventListener("pointerup", end, { signal: drag.signal });
+    addEventListener("pointercancel", end, { signal: drag.signal });
+  });
+  bar.addEventListener("dblclick", (event) => {
+    if (event.target instanceof Element && event.target.closest("button")) {
+      return;
+    }
+    spot = null;
+    panel.classList.remove("moved");
+    panel.style.left = "";
+    panel.style.bottom = "";
+    forget(POSITION_KEY);
+  });
+
+  try {
+    const saved = JSON.parse(remembered(POSITION_KEY) ?? "null") as Spot | null;
+    if (saved && Number.isFinite(saved.left) && Number.isFinite(saved.bottom)) {
+      place(saved.left, saved.bottom);
+    }
+  } catch {
+    // an unreadable position: the panel opens in its corner
+  }
+  // The window, the open tab, and collapsing all change how much room the panel has.
+  addEventListener("resize", replace);
+  new ResizeObserver(replace).observe(panel);
 }
 
 function describe(flight: Flight): string {
@@ -238,6 +356,8 @@ export function startInfo(focus: (id: string) => void): void {
   const title = element("info-title", HTMLHeadingElement);
 
   startTabs(panel);
+  startDrag(panel);
+  startWeather(element("weather", HTMLSpanElement));
 
   const load = async () => {
     title.textContent = `Today, ${DATE.format(Date.now())}`;

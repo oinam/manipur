@@ -30,6 +30,9 @@ web/dist/
 .dev.vars
 mise.local.toml
 
+# scratch: letters and notes that stay on this machine
+/tmp/
+
 # logs
 *.log
 npm-debug.log*

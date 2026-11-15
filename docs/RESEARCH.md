@@ -111,7 +111,9 @@ source code is published.
 
 This breaks the "cannot use the recipe" argument below. The recipe needs a
 structured render to condition on, not Google 3D, and our procedural map is that
-render. The AI restyle stays Phase 5 and parked until Brajeshwar lifts it.
+render. The AI restyle stays Phase 5 and parked until Brajeshwar lifts it. On
+2026-11-15 he set when to revisit: once there is a separate machine, or a budget
+for a better cloud GPU. The M1 Pro with 16 GB here is too small for it.
 
 ## Why Imphal cannot use the recipe
 

@@ -85,6 +85,34 @@ exist for India. Recorded here so we know what we are and are not copying.
   source. HN thread noted the hills look flat because the view cannot rotate.
 - https://sf.isopolis.city/
 
+## Pixel Chennai (2026)
+
+Read 2026-11-15 from the site's own About text in `viewer.js`. No write-up or
+source code is published.
+
+- Greater Chennai, about 60 km of coast from Ennore Port to Mahabalipuram.
+- No Google 3D. "Every building, road, lake and tree starts from open data:
+  OpenStreetMap and Overture building footprints, Google Open Buildings heights
+  and a satellite map of tree canopy. A program draws that data as a plain
+  isometric map." That is the same input we already use.
+- That procedural render conditions "a local image model, Qwen-Image-Edit-2511,
+  run on a MacBook's GPU with a 4-step LoRA for speed and our own style LoRA
+  trained on that Mac. The style was trained from open data, using Google's Nano
+  Banana for a few tiles; after that it runs completely locally."
+- Two OpenSeadragon layers with one camera, toggled with L: the procedural map
+  at 310,851 × 219,672 px and the AI layer at twice that, 621,702 × 439,344 px.
+  WebP tiles at 512 px, served from R2-style object storage with `?v=N` cache-busting
+  per redrawn patch.
+- The site admits the model "still invents small details such as rooftop clutter,
+  people, traffic and shop signs." It labels the layer as an AI illustration. Water
+  is one painted texture, not traced.
+- English and Tamil UI, road-name labels along their course, a locator inset, and
+  van Wijk–Nuij smooth flights between places.
+
+This breaks the "cannot use the recipe" argument below. The recipe needs a
+structured render to condition on, not Google 3D, and our procedural map is that
+render. The AI restyle stays Phase 5 and parked until Brajeshwar lifts it.
+
 ## Why Imphal cannot use the recipe
 
 - Google Maps Platform coverage table: "Maps 3D" unavailable for India

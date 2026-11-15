@@ -133,6 +133,52 @@ button:focus-visible,
   border-top: 1px solid var(--line);
 }
 
+.controls button {
+  position: relative;
+}
+
+.controls svg {
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Each tool names itself and its key to the left of the column, on hover or keyboard focus. */
+.controls button[data-tip]::after {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 10px);
+  padding: 4px 9px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  content: attr(data-tip);
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition: opacity 0.12s;
+  white-space: nowrap;
+}
+
+.controls button[data-tip]:hover::after,
+.controls button[data-tip]:focus-visible::after {
+  opacity: 1;
+  transition-delay: 0.25s;
+}
+
+@media (hover: none) {
+  .controls button[data-tip]::after {
+    display: none;
+  }
+}
+
 .needle {
   position: relative;
   display: inline-block;

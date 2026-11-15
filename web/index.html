@@ -24,32 +24,36 @@
     </div>
 
     <div class="panel controls">
-      <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
-      <button id="zoom-out" type="button" aria-label="Zoom out">−</button>
+      <button id="zoom-in" type="button" aria-label="Zoom in" data-tip="Zoom in (+)">+</button>
+      <button id="zoom-out" type="button" aria-label="Zoom out" data-tip="Zoom out (−)">−</button>
       <button
         id="home"
         type="button"
-        aria-label="Back to the city center"
-        title="Back to the city center"
+        aria-label="Home: back to the city center"
+        data-tip="Home: back to the city center (H)"
       >
-        ⌂
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 10.5 12 3l9 7.5" />
+          <path d="M5.5 9v11.5h13V9" />
+          <path d="M10 20.5v-6h4v6" />
+        </svg>
       </button>
       <button
         id="rotate"
         type="button"
         aria-label="Rotate the view"
-        title="Rotate the view (hold Alt or Option to reverse)"
+        data-tip="Rotate the view (R; Shift or Alt reverses)"
       >
         ↻
       </button>
-      <button id="compass" type="button" aria-label="Face north" title="Face north">
+      <button id="compass" type="button" aria-label="Face north" data-tip="Face north (N)">
         <span id="needle" class="needle" aria-hidden="true"></span>
       </button>
       <button
         id="settings"
         type="button"
         aria-label="Settings"
-        title="Settings"
+        data-tip="Settings"
         aria-expanded="false"
         aria-controls="settings-panel"
       >
@@ -59,7 +63,7 @@
         id="help"
         type="button"
         aria-label="Help and keyboard shortcuts"
-        title="Help and keyboard shortcuts (?)"
+        data-tip="Help and keyboard shortcuts (?)"
         aria-haspopup="dialog"
         aria-controls="help-dialog"
       >
@@ -116,11 +120,11 @@
           <dt><kbd>+</kbd> <kbd>−</kbd></dt>
           <dd>Zoom in and out</dd>
           <dt><kbd>R</kbd>, <kbd>Shift</kbd> <kbd>R</kbd></dt>
-          <dd>Turn the view 15°, or back</dd>
+          <dd>Turn the view a quarter turn, or back</dd>
           <dt><kbd>N</kbd></dt>
           <dd>Face north</dd>
           <dt><kbd>H</kbd> or <kbd>0</kbd></dt>
-          <dd>Back to the city center</dd>
+          <dd>Home: back to the city center</dd>
           <dt><kbd>/</kbd></dt>
           <dd>Search a place</dd>
           <dt><kbd>I</kbd></dt>

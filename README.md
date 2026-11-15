@@ -13,6 +13,7 @@ The look and the method owe more to:
 
 ## Inspiration
 
+- https://isometriccities.com
 - [tiny.london](https://tiny.london) by Boris Starkov, with a [write-up of how it was made](https://tiny.london/how/)
 - [isometric.nyc](https://isometric.nyc) by Andy Coenen, with a [write-up](https://cannoneyed.com/projects/isometric-nyc) and [source code](https://github.com/cannoneyed/isometric-nyc)
 - [Pixel Singapore](https://www.yadongxie.com/blog/how-pixel-singapore-was-made) by Yadong Xie
@@ -23,6 +24,7 @@ The look and the method owe more to:
 - [Tiny Madrid](https://tinymadrid.app/)
 - https://isometricseattle.fun
 - https://isometricsf.com https://www.justinchavez.com/blog/isometric-sf-how/
+- https://pixelchennai.com/
 
 ## References
 

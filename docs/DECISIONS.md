@@ -474,6 +474,16 @@ R2: the old Imphal map's 24 (about 3.5 GB; local copies stay in
 `out/imphal/tiles/pyramid/`) and `1b7ede2a65`, an unfinished upload with no `.dzi` and
 no local copy. The bucket now holds only the four live views and the index files.
 
+## 2026-11-15 — Air quality beside the weather
+
+Brajeshwar asked for the AQI next to the weather. The bar now reads, for example,
+"21°C · clear sky · AQI 60", and its tooltip adds the band and PM2.5. It comes from
+Open-Meteo's air-quality API, the same way as the weather: the browser asks directly
+and in parallel, and a failed air lookup only drops the AQI. The index is the US AQI,
+since Open-Meteo offers no Indian national AQI and the US scale is the one most apps
+in India show. The value is a CAMS model at about 45 km, so the tooltip calls it a
+valley-wide estimate, not a station reading. It is words only, in the bar's muted color.
+
 ## 2026-11-14 — Weather in the info panel, read by the browser
 
 Brajeshwar asked for the current weather in the info panel, as on his Greenage map. The

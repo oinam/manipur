@@ -73,6 +73,7 @@ uv run manipur build --area valley       # renders and tiles the site's four vie
 uv run manipur frames --area imphal      # renders the four views as seamless 2048 px frames
 uv run manipur tile   --area imphal      # builds each view's Deep Zoom pyramid and the search index
 uv run python tools/og_image.py [area]   # cuts the link-preview picture of Kangla from the finished tiles into web/public/og.png
+uv run python tools/zoom_video.py [area]  # makes the 9 s zoom-in film, valley to Kangla, from the finished tiles into web/public/zoom.mp4
 pnpm --dir web install && pnpm --dir web build   # builds the viewer into web/dist
 mise run dev                             # live-reloading viewer with local tiles: http://localhost:8645 (MAP_AREA=<area> for another)
 uv run python tools/upload_tiles.py [area]  # uploads an area's finished tile pyramids (default valley), then its index files, to R2 with rclone; needs the R2 keys in .env

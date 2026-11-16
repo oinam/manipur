@@ -474,6 +474,15 @@ R2: the old Imphal map's 24 (about 3.5 GB; local copies stay in
 `out/imphal/tiles/pyramid/`) and `1b7ede2a65`, an unfinished upload with no `.dzi` and
 no local copy. The bucket now holds only the four live views and the index files.
 
+## 2026-11-16 — Smooth while zoomed out, crisp when zoomed in
+
+Pixel art shrunk with hard edges turns to speckle: window dots flicker and road dashes
+step. The viewer now smooths the map while each map pixel covers less than a screen pixel,
+and keeps it hard-edged once a map pixel covers one or more. A zoom that lands exactly on
+a pyramid level (0.25, 0.5 on a 2x screen) draws its tiles one to one, so it stays crisp
+too. Pixel Chennai does the same. The before and after are in
+`out/viewer/smoothing-before-after.png`.
+
 ## 2026-11-15 — Air quality beside the weather
 
 Brajeshwar asked for the AQI next to the weather. The bar now reads, for example,

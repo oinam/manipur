@@ -311,6 +311,7 @@ viewer.addHandler("open", () => {
     still?.remove();
   });
   updateTilt();
+  updateSmoothing();
   buildLabels();
   updateCorrectionLink();
   writeHash();
@@ -330,6 +331,7 @@ viewer.addHandler("open", () => {
     viewer.addHandler("animation-finish", updateLabels);
     viewer.addHandler("animation-finish", updateCorrectionLink);
     viewer.addHandler("animation", updateTilt);
+    viewer.addHandler("animation", updateSmoothing);
   }
 });
 
@@ -401,6 +403,20 @@ function updateLabels(): void {
       }
     }
     element.hidden = !show;
+  }
+}
+
+// Pixel art shrunk with hard edges turns to speckle, so it is smoothed while the map is
+// shrunk, and kept hard-edged once each map pixel covers a screen pixel or more. A zoom
+// that lands on a pyramid level draws its tiles one to one, so it stays hard-edged too.
+let smoothing = false;
+
+function updateSmoothing(): void {
+  const scale = Math.log2(imageZoom() * devicePixelRatio);
+  const smooth = scale < 0 && Math.abs(scale - Math.round(scale)) > 0.02;
+  if (smooth !== smoothing) {
+    smoothing = smooth;
+    viewer.drawer.setImageSmoothingEnabled(smooth);
   }
 }
 

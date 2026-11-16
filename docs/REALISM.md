@@ -41,6 +41,10 @@ No photos needed:
    rooftop water tanks, and shutters along market roads.
 4. **Softer ground.** Use OSM land use where it exists, and smooth WorldCover edges.
 
+TODO in future, from Brajeshwar 2026-11-16: textures to escape the "diagram" look. The
+Isometric Cities guide names this as the weak point of maps rendered from open data, and
+items 2 and 3 above are how we would get there.
+
 With photos, as drawing references only:
 
 5. **The remaining landmarks.** RIMS, Manipur University, the State Museum, Khuman

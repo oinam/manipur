@@ -419,8 +419,9 @@ function zoomBy(factor: number): void {
 
 // Home is the opening view, near enough to read the city, in whichever way it faces now.
 function goHome(): void {
+  // fromLink already places it in a shown view, so convert from that one, not the index frame.
   const opening = fromLink(OPENING_VIEW);
-  const [x, y] = toCurrentView(opening.x, opening.y);
+  const [x, y] = convertPoint(opening.x, opening.y, viewData(opening.view), viewData(currentView));
   goTo(x, y, opening.zoom, false);
 }
 
